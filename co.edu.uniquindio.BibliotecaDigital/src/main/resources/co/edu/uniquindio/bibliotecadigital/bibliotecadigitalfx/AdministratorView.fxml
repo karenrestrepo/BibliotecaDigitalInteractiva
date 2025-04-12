@@ -8,7 +8,64 @@
 
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
-            fx:controller="co.edu.uniquindio.bibliotecadigitalinteractiva.bibliotecadigitalinteractivafx.Controller.AdministratorController"
+            fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.AdministratorController"
             prefHeight="400.0" prefWidth="600.0">
-
+    <children>
+        <TabPane layoutX="8.0" layoutY="8.0" prefHeight="642.0" prefWidth="865.0" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="Gestión de libros">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="ManageBooks.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="Gestión de usuarios">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="UserManagement.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="Grafo">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="AffinityNetwork.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="Estadísticas">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="LibraryStats.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </children>
 </AnchorPane>

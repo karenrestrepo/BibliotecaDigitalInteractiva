@@ -1,14 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="co.edu.uniquindio.bibliotecadigitalinteractiva.bibliotecadigitalinteractivafx.Controller.ReaderController"
-            prefHeight="400.0" prefWidth="600.0">
-
+<AnchorPane prefHeight="719.0" prefWidth="715.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ReaderController">
+    <children>
+        <TabPane layoutX="8.0" layoutY="8.0" prefHeight="642.0" prefWidth="865.0" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="Inicio">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="Home.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="Panel personal">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="MyLibrary.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+                <Tab text="Mensajería">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                            <children>
+                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                    <items>
+                                        <fx:include source="Messages.fxml" />
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </children>
 </AnchorPane>
