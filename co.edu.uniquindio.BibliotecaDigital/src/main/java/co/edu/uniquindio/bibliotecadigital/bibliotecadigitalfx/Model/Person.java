@@ -5,6 +5,9 @@ public abstract class Person {
     protected String username;
     protected String password;
 
+    public Person() {
+    }
+
     public Person(String name, String username, String password) {
         this.name = name;
         this.username = username;

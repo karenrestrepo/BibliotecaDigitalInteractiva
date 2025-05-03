@@ -6,6 +6,10 @@ public class Reader extends Person {
     private LinkedList<Book> loanHistory;
     private LinkedList<Rating> ratings;
 
+    public Reader() {
+
+    }
+
     public Reader(String name, String username, String password) {
         super(name, username, password);
         this.loanHistory = new LinkedList<>();
