@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.AffinityNetworkController"
-            prefHeight="400.0" prefWidth="600.0">
 
+<AnchorPane prefHeight="675.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.AffinityNetworkController">
+   <children>
+      <ScrollPane layoutX="3.0" layoutY="54.0" prefHeight="617.0" prefWidth="593.0">
+         <content>
+            <Pane fx:id="PaneGraph" prefHeight="607.0" prefWidth="596.0" />
+         </content>
+      </ScrollPane>
+      <Label layoutX="225.0" layoutY="20.0" text="Afinidad entre lectores">
+         <font>
+            <Font name="System Bold Italic" size="14.0" />
+         </font>
+      </Label>
+   </children>
 </AnchorPane>
