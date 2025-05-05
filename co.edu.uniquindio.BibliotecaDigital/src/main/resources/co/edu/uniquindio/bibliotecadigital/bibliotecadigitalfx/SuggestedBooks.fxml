@@ -5,8 +5,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane prefHeight="624.0" prefWidth="598.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.SuggestedBooksController">
+<AnchorPane prefHeight="624.0" prefWidth="599.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.SuggestedBooksController">
    <children>
       <ListView fx:id="lvSuggestedBooks" layoutX="36.0" layoutY="66.0" prefHeight="525.0" prefWidth="526.0" />
       <Label layoutX="36.0" layoutY="29.0" text="Libros recomendados según tus valoraciones">

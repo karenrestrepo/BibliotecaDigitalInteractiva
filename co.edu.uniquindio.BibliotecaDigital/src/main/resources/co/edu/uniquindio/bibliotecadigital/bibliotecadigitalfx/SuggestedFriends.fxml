@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.SuggestedFriendsController"
-            prefHeight="400.0" prefWidth="600.0">
 
+<AnchorPane prefHeight="624.0" prefWidth="599.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.SuggestedFriendsController">
+   <children>
+      <ListView fx:id="lvSuggestedFriends" layoutX="37.0" layoutY="68.0" prefHeight="525.0" prefWidth="526.0" />
+      <Label layoutX="37.0" layoutY="31.0" text="Amigos recomendados">
+         <font>
+            <Font name="System Bold Italic" size="14.0" />
+         </font>
+      </Label>
+   </children>
 </AnchorPane>
