@@ -45,7 +45,7 @@
             </AnchorPane>
         </items>
       </SplitPane>
-      <Label layoutX="123.0" layoutY="8.0" prefHeight="35.0" prefWidth="232.0" text="Bienvenidos a su biblioteca digital">
+      <Label layoutX="123.0" layoutY="8.0" prefHeight="35.0" prefWidth="232.0" text="Bienvenidos a su library digital">
          <font>
             <Font name="System Bold Italic" size="14.0" />
          </font>

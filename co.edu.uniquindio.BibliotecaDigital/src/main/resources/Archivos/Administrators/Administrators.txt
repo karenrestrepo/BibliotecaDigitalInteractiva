@@ -1,0 +1,2 @@
+Manuela Aristizabal,administrador1@gmail.com,1234
+Karen Restrepo,administrador2@gmail.com,4321

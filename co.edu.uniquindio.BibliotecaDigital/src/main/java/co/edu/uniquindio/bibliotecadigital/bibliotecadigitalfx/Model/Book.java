@@ -23,6 +23,8 @@ public class Book {
         this.ratingSum = 0;
     }
 
+    public Book(){}
+
     // Getters and setters
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
@@ -33,6 +35,34 @@ public class Book {
 
     public void setStatus(BookStatus status) {
         this.status = status;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setAverageRating(double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public void setTotalRatings(int totalRatings) {
+        this.totalRatings = totalRatings;
+    }
+
+    public void setRatingSum(int ratingSum) {
+        this.ratingSum = ratingSum;
     }
 
     public void addRating(int stars) {

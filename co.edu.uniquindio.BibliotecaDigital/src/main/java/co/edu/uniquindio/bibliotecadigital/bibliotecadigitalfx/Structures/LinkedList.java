@@ -29,6 +29,10 @@ public class LinkedList<T> implements Iterable<T> {
 
         size++;
     }
+    public void add(T element) {
+        addEnd(element);
+    }
+
 
     public void addEnd (T amountNodo) {
         ListNode<T> nodo = new ListNode<>(amountNodo);
