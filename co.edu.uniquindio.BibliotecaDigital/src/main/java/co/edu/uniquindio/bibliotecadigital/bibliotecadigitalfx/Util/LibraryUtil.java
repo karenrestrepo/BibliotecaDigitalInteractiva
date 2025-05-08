@@ -29,6 +29,9 @@ public class LibraryUtil {
         book.setStatus(BookStatus.AVAILABLE);
         book.setAverageRating(0);
 
+        library.getBookssList().addBeginning(book);
+
+
         return library;
     }
 }

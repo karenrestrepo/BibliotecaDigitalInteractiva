@@ -6,6 +6,8 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 public class Library {
     LinkedList<Reader> readersList = new LinkedList<>();
     LinkedList<Book> bookssList = new LinkedList<>();
+    LinkedList<Administrator> administrators = new LinkedList<>();
+
 
     public LinkedList<Reader> getReadersList() {
         return readersList;
@@ -21,5 +23,13 @@ public class Library {
 
     public void setBookssList(LinkedList<Book> bookssList) {
         this.bookssList = bookssList;
+    }
+
+    public LinkedList<Administrator> getAdministrators() {
+        return administrators;
+    }
+
+    public void setAdministrators(LinkedList<Administrator> administrators) {
+        this.administrators = administrators;
     }
 }
