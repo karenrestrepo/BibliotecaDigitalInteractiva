@@ -28,9 +28,9 @@ public class Persistence {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
-                    String name = parts[0];
-                    String username = parts[1];
-                    String password = parts[2];
+                    String name = parts[0].trim();
+                    String username = parts[1].trim();
+                    String password = parts[2].trim();
                     administrators.put(username, new Administrator(name, username, password));
                 }
             }
@@ -45,9 +45,10 @@ public class Persistence {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
-                    String name = parts[0];
-                    String username = parts[1];
-                    String password = parts[2];
+                    String name = parts[0].trim();
+                    String username = parts[1].trim();
+                    String password = parts[2].trim();
+
                     Reader r = new Reader(name, username, password);
                     readers.put(username, r);
                 }
@@ -58,7 +59,13 @@ public class Persistence {
     }
 
     private void saveReaderToFile(Reader reader) {
+        if (readers.containsKey(reader.getUsername())) {
+            System.out.println("El lector ya está registrado.");
+            return;
+        }
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(READERS_FILE, true))) {
+
             writer.write(reader.getName() + "," + reader.getUsername() + "," + reader.getPassword());
             writer.newLine();
         } catch (IOException e) {

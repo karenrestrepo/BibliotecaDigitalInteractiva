@@ -12,14 +12,14 @@ public class LibraryUtil {
 
         Reader reader = new Reader();
         reader.setName("Ana");
-        reader.setName("Ana@gmail.com");
-        reader.setName("Ana123");
+        reader.setUsername("Ana@gmail.com");
+        reader.setPassword("Ana123");
         library.getReadersList().addBeginning(reader);
 
         Administrator administrator = new Administrator();
         administrator.setName("Manuela");
-        administrator.setName("Administrador1@gmail.com");
-        administrator.setName("1234");
+        administrator.setUsername("Administrador1@gmail.com");
+        administrator.setPassword("1234");
 
         Book book = new Book();
         book.setTitle("If I stay");

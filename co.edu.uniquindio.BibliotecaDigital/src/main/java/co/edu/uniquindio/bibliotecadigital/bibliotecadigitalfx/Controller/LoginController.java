@@ -54,6 +54,7 @@ public class LoginController {
 
     @FXML
     void onLogin(ActionEvent event) {
+
         String username = txtUser.getText();
         String password = txtPassword.getText();
 
@@ -63,6 +64,7 @@ public class LoginController {
         }
 
         Object user = persistence.login(username, password);
+
 
         if (user instanceof Administrator) {
             openView("/co/edu/uniquindio/bibliotecadigital/bibliotecadigitalfx/AdministratorView.fxml");
@@ -123,12 +125,7 @@ public class LoginController {
 
     @FXML
     void initialize() {
-        assert btnLogin != null : "fx:id=\"btnLogin\" was not injected: check your FXML file.";
-        assert btnRegister != null : "fx:id=\"btnRegister\" was not injected: check your FXML file.";
-        assert txtUser != null : "fx:id=\"txtUser\" was not injected: check your FXML file.";
-        assert txtPassword != null : "fx:id=\"txtPassword\" was not injected: check your FXML file.";
-        assert txtNewName != null : "fx:id=\"txtNewName\" was not injected: check your FXML file.";
-        assert txtNewUser != null : "fx:id=\"txtNewUser\" was not injected: check your FXML file.";
-        assert txtNewPassword != null : "fx:id=\"txtNewPassword\" was not injected: check your FXML file.";
+
+
     }
 }
