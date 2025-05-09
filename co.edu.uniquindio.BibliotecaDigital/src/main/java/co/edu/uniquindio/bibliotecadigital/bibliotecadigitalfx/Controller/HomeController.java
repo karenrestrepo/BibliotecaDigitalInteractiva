@@ -6,6 +6,7 @@ import java.util.ResourceBundle;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
@@ -58,19 +59,21 @@ public class HomeController {
     @FXML
     void initialize() {
 
+
     }
 
     private void requestBook(String title) {
         Library library = LibraryUtil.initializeData();
         Book book = Reader.getBookByTittle(title, library);
 
+
         if (book != null && book.getStatus() == BookStatus.AVAILABLE) {
             // Obtén el usuario actual (lector o administrador)
-            Object user = Persistence.getUser();
+            Person user = Persistence.getCurrentUser();
 
             if (user instanceof Reader) {
                 // Realiza el préstamo del libro
-                Reader.lendBook(book, user);
+                Reader.lendBook(book,(Reader) user);
 
                 tbBooks.refresh();
 

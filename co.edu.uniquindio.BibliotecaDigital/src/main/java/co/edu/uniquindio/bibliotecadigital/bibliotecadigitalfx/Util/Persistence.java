@@ -9,6 +9,8 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Linked
 import java.io.*;
 
 public class Persistence {
+
+    private static Person currentUser;
     private static final String READERS_FILE = "src/main/resources/Archivos/Readers/Readers.txt";
     private static final String ADMINS_FILE = "src/main/resources/Archivos/Administrators/Administrators.txt";
 
@@ -87,9 +89,11 @@ public class Persistence {
         Reader user = readers.get(username);
         Administrator administrator = administrators.get(username);
         if (user != null && user.getPassword().equals(password)) {
+            currentUser = user;
             return user;
         }
         if (administrator != null && administrator.getPassword().equals(password)) {
+            currentUser = administrator;
             return administrator;
         }
         return null;
@@ -105,6 +109,14 @@ public class Persistence {
             }
         }
         return list;
+    }
+
+    public static Person getCurrentUser() {
+        return currentUser;
+    }
+
+    public static void setCurrentUser(Person user) {
+        currentUser = user;
     }
 
     public HashMap<String, Reader> getReaders() {
