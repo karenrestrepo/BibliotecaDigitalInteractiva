@@ -6,12 +6,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Administrator extends Person {
-    Library library = LibraryUtil.initializeData();
+    Library library;
 
+    public Administrator(String name, String username, String password, Library library) {
+        super(name, username, password);
+        this.library = library;
+    }
     public Administrator(String name, String username, String password) {
         super(name, username, password);
     }
-
     public Administrator() {}
 
     // Añadir y eliminar libros.
@@ -48,24 +51,23 @@ public class Administrator extends Person {
         return false;
     }
 
-    /**
-     * Visualizar el grafo de afinidad entre lectores.
+    //Visualizar el grafo de afinidad entre lectores.
 
-
-    public Graph<Person> getAffinityGraph(){
+    public Graph<Reader> getAffinityGraph(){
         return library.getAffinityGraph();
-    } *
-     * */
+    }
 
     // Cantidad de préstamos por lector.
     public Map<Person, Integer> getLoansPerReader(){
         Map<Person, Integer> loansMap = new HashMap<>();
-        //for (Loan loan : library.getBookssList()) {
-          //  Person reader = loan.getReader();
-     //       loansMap.put(reader, loansMap.getOrDefault(reader, 0) + 1);
-       // }
+        for (int i = 0; i < library.getReadersList().getSize(); i++) {
+            Reader reader = library.getReadersList().getAmountNodo(i);
+            int loans = reader.getLoanHistoryList().getSize(); // método getter necesario
+            loansMap.put(reader, loans);
+        }
         return loansMap;
     }
+
 
     // Libros más valorados.
     public List<Book> getTopRatedBooks(int topN){
@@ -76,8 +78,8 @@ public class Administrator extends Person {
     }
 
     // Lectores con más conexiones.
-    public List<Person> getMostConnectedReaders(int topN){
-        Graph<Person> graph = getAffinityGraph();
+    public List<Reader> getMostConnectedReaders(int topN){
+        Graph<Reader> graph = getAffinityGraph();
         return graph.getVertices().stream()
                 .sorted((p1, p2) -> Integer.compare(
                         graph.getAdjacentVertices(p2).size(),
@@ -87,12 +89,12 @@ public class Administrator extends Person {
     }
 
     // Caminos más cortos entre dos lectores.
-    public java.util.LinkedList<Person> getShortestPathBetweenReaders(Person a, Person b){
-        Graph<Person> graph = getAffinityGraph();
-        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<Person> customPath = graph.getShortestPath(a, b);
+    public LinkedList<Reader> getShortestPathBetweenReaders(Reader a, Reader b){
+        Graph<Reader> graph = getAffinityGraph();
+        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<Reader> customPath = graph.getShortestPath(a, b);
 
-        java.util.LinkedList<Person> standardPath = new java.util.LinkedList<>();
-        for (Person person : customPath) {
+        java.util.LinkedList<Reader> standardPath = new java.util.LinkedList<>();
+        for (Reader person : customPath) {
             standardPath.add(person);
         }
 
@@ -101,12 +103,12 @@ public class Administrator extends Person {
 
 
     // Detectar clústeres de afinidad (grupos).
-    public List<Set<Person>> detectAffinityClusters(){
-        Graph<Person> graph = getAffinityGraph();
-        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<HashSet<Person>> customComponents = graph.getConnectedComponents();
+    public List<Set<Reader>> detectAffinityClusters(){
+        Graph<Reader> graph = getAffinityGraph();
+        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<HashSet<Reader>> customComponents = graph.getConnectedComponents();
 
-        List<Set<Person>> standardComponents = new java.util.ArrayList<>();
-        for (HashSet<Person> component : customComponents) {
+        List<Set<Reader>> standardComponents = new java.util.ArrayList<>();
+        for (HashSet<Reader> component : customComponents) {
             standardComponents.add(component);
         }
 

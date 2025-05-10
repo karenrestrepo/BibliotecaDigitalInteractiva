@@ -61,6 +61,9 @@ public class Library {
     }
 
     public LinkedList<Reader> getReadersList() {
+        if (readersList.isEmpty()) {
+            System.out.println("No hay lectores registrados");
+        }
         return readersList;
     }
 
@@ -87,23 +90,19 @@ public class Library {
         this.administrators = administrators;
     }
 
-
-    /**
-     *
-
-    public Graph<Person> getAffinityGraph() {
-        Graph<Person> affinityGraph = new Graph<>();
+    public Graph<Reader> getAffinityGraph() {
+        Graph<Reader> affinityGraph = new Graph<>();
 
         // Supongamos que tienes una lista de personas en la biblioteca
-        for (Person person : personList) {
+        for (Reader person : getReadersList()) {
             affinityGraph.addVertex(person);
         }
 
         // Ahora agregamos las aristas basadas en afinidad (ej: libros comunes)
-        for (int i = 0; i < personList.size(); i++) {
-            for (int j = i + 1; j < personList.size(); j++) {
-                Person p1 = personList.get(i);
-                Person p2 = personList.get(j);
+        for (int i = 0; i < getReadersList().getSize(); i++) {
+            for (int j = i + 1; j < getReadersList().getSize(); j++) {
+                Reader p1 = getReadersList().getAmountNodo(i);
+                Reader p2 = getReadersList().getAmountNodo(j);
 
                 if (haveAffinity(p1, p2)) {
                     affinityGraph.addEdge(p1, p2);
@@ -115,14 +114,11 @@ public class Library {
     }
     private boolean haveAffinity(Reader p1, Reader p2) {
         // Ejemplo: tienen al menos un libro en común prestado
-        for (Book book : p1.get) {
-            if (p2.getBorrowedBooks().contains(book)) {
+        for (Book book : p1.getLoanHistoryList()) {
+            if (p2.getLoanHistoryList().contains(book)) {
                 return true;
             }
         }
         return false;
     }
-
-     * @return
-     */
 }
