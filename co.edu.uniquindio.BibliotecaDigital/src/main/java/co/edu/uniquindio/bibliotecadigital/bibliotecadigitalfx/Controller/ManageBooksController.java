@@ -1,24 +1,19 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import java.net.URL;
-import java.util.LinkedList;
 import java.util.ResourceBundle;
 
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 public class ManageBooksController {
 
-    LinkedList<Book> listBooks = new LinkedList<>();
-
+    Library library;
     Book selectedBook;
 
     @FXML
@@ -47,6 +42,8 @@ public class ManageBooksController {
 
     @FXML
     private TableColumn<Book, String> tcStatus;
+    @FXML
+    private TableColumn<Book, String> tcId;
 
     @FXML
     private TableColumn<Book, String> tcTitle;
@@ -73,40 +70,107 @@ public class ManageBooksController {
 
     @FXML
     private TextField txtYear;
+    @FXML
+    private TextField txtId;
 
     @FXML
-    void onAgregar(ActionEvent event) {
+    void onAdd(ActionEvent event) {
+        addBook();
 
     }
+
     @FXML
-    void onEliminarar(ActionEvent event) {
+    void onDelete(ActionEvent event) {
+        removeBook();
 
     }
 
     @FXML
     void initialize() {
+        library = new Library();
         initView();
 
 
     }
 
-    private void addBook(){
-        // buildBook -> construirlibro
+    private void addBook() {
         Book book = buildBook();
-        // validata -> validar datos
-        if (validateData(book)){
-            
+        if (validateData(book)) {
+            // Verificar si el libro ya existe
+            if (library.bookExists(book.getIdBook())) {
+                showMessage("Error", "Cannot add book", "The book with this ID already exists", Alert.AlertType.ERROR);
+                return; // Salir si el libro ya existe
+            }
 
+            try {
+                library.createBook(
+                        book.getIdBook(),
+                        book.getTitle(),
+                        book.getAuthor(),
+                        book.getYear(),
+                        book.getCategory()
+                );
+                updateTableView();
+                showMessage("Success", "Book added", "The book was added successfully", Alert.AlertType.INFORMATION);
+            } catch (RuntimeException e) {
+                showMessage("Error", "Cannot add book", e.getMessage(), Alert.AlertType.ERROR);
+            }
         }
     }
 
+
     private boolean validateData(Book book) {
+
+        String message = "";
+        if (book.getTitle() == null || book.getTitle().equals(""))
+            message += "The title is not valid.\n";
+        if (book.getAuthor() == null || book.getAuthor().equals(""))
+            message += "The author is not valid.\n";
+        if (book.getYear() == 0)
+            message += "The year is not valid.\n";
+        if (book.getCategory() == null || book.getCategory().equals(""))
+            message += "The category is not valid.\n";
+
+        if (message.equals("")) {
+            return true;
+        } else {
+            showMessage("User Notification", "Invalid Data", message, Alert.AlertType.WARNING);
+            return false;
+        }
+    }
+
+
+    private void showMessage(String title, String header, String content, Alert.AlertType alertType) {
+        Alert aler = new Alert(alertType);
+        aler.setTitle(title);
+        aler.setHeaderText(header);
+        aler.setContentText(content);
+        aler.showAndWait();
     }
 
     private Book buildBook() {
+        return new Book(
+                txtId.getText(),
+                txtTitle.getText(),
+                txtAuthor.getText(),
+                Integer.parseInt(txtYear.getText()),
+                txtCategory.getText()
+
+        );
     }
 
-    private void removeBook(){}
+
+    private void removeBook() {
+        if (selectedBook != null) {
+            try {
+                library.removeBook(selectedBook.getIdBook());
+                updateTableView();
+                showMessage("Success", "Book deleted", "The book was deleted successfully", Alert.AlertType.INFORMATION);
+            } catch (RuntimeException e) {
+                showMessage("Error", "Cannot delete book", e.getMessage(), Alert.AlertType.ERROR);
+            }
+        }
+    }
 
     private void initView() {
         initDataBinding();
@@ -114,13 +178,18 @@ public class ManageBooksController {
         listenerSelection();
     }
 
-    /// Agrega los elementos de la linkedlist
+
     private void updateTableView() {
         tableBook.getItems().clear();
-        for (Book book : listBooks) {
+
+        // Obtener todos los libros desde el HashMap
+        LinkedList<Book> bookList = library.getBooks().values();
+        for (Book book : bookList) {
             tableBook.getItems().add(book);
         }
     }
+
+
 
 
 
@@ -133,6 +202,7 @@ public class ManageBooksController {
 
     private void showUserInformation(Book selectedBook) {
         if (this.selectedBook != null) {
+            txtId.setText(selectedBook.getIdBook());
             txtTitle.setText(selectedBook.getTitle());
             txtAuthor.setText(selectedBook.getAuthor());
             txtYear.setText(String.valueOf(selectedBook.getYear()));
@@ -143,15 +213,14 @@ public class ManageBooksController {
     }
 
     private void initDataBinding() {
+        tcId.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getIdBook()));
         tcTitle.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTitle()));
         tcAuthor.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getAuthor()));
         tcYear.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getYear())));
         tcCategory.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCategory()));
-        tcStatus.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getStatus().toString()));
-        tcRating.setCellValueFactory(cellData ->
-                new SimpleStringProperty(String.valueOf(cellData.getValue().getAverageRating())));
+
     }
+
 
 
 }

@@ -3,6 +3,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 
 public class Book {
+    private String idBook;
     private String title;
     private String author;
     private int year;
@@ -12,7 +13,8 @@ public class Book {
     private int totalRatings;
     private int ratingSum;
 
-    public Book(String title, String author, int year, String category) {
+    public Book(String id, String title, String author, int year, String category) {
+        this.idBook = id;
         this.title = title;
         this.author = author;
         this.year = year;
@@ -26,12 +28,20 @@ public class Book {
     public Book(){}
 
     // Getters and setters
+
+    public String getIdBook() {
+        return idBook;
+    }
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
     public int getYear() { return year; }
     public String getCategory() { return category; }
     public BookStatus getStatus() { return status; }
     public double getAverageRating() { return averageRating; }
+
+    public void setIdBook(String idBook) {
+        this.idBook = idBook;
+    }
 
     public void setStatus(BookStatus status) {
         this.status = status;

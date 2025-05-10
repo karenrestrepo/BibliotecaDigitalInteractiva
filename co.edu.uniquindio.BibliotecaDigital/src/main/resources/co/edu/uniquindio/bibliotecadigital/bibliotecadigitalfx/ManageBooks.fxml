@@ -14,26 +14,29 @@
          <items>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="250.0" prefWidth="865.0">
                <children>
-                  <TextField fx:id="txtTitle" layoutX="79.0" layoutY="36.0" prefHeight="25.0" prefWidth="180.0" />
-                  <Button fx:id="btnAgregar" layoutX="253.0" layoutY="222.0" mnemonicParsing="false" onAction="#onAgregar" prefHeight="25.0" prefWidth="88.0" text="Agregar" />
-                  <Label layoutX="25.0" layoutY="40.0" text="Título:" />
-                  <Label layoutX="25.0" layoutY="108.0" text="Autor:" />
-                  <Label layoutX="315.0" layoutY="40.0" text="Categoría:" />
-                  <Label layoutX="333.0" layoutY="108.0" text="Estado:" />
-                  <TextField fx:id="txtStatus" layoutX="393.0" layoutY="104.0" prefHeight="25.0" prefWidth="180.0" />
-                  <TextField fx:id="txtCategory" layoutX="393.0" layoutY="36.0" prefHeight="25.0" prefWidth="180.0" />
-                  <TextField fx:id="txtAuthor" layoutX="79.0" layoutY="104.0" prefHeight="25.0" prefWidth="180.0" />
-                  <TextField fx:id="txtYear" layoutX="79.0" layoutY="172.0" prefHeight="25.0" prefWidth="180.0" />
-                  <Label layoutX="29.0" layoutY="176.0" text="Año:" />
-                  <TextField fx:id="txtRating" layoutX="393.0" layoutY="172.0" prefHeight="25.0" prefWidth="180.0" />
-                  <Label layoutX="310.0" layoutY="176.0" text="Calificación:" />
+                  <TextField fx:id="txtTitle" layoutX="79.0" layoutY="31.0" prefHeight="25.0" prefWidth="180.0" />
+                  <Button fx:id="btnAgregar" layoutX="452.0" layoutY="230.0" mnemonicParsing="false" onAction="#onAdd" prefHeight="25.0" prefWidth="88.0" text="Agregar" />
+                  <Label layoutX="25.0" layoutY="35.0" text="Título:" />
+                  <Label layoutX="25.0" layoutY="103.0" text="Autor:" />
+                  <Label layoutX="306.0" layoutY="35.0" text="Categoría:" />
+                  <Label layoutX="324.0" layoutY="103.0" text="Estado:" />
+                  <TextField fx:id="txtStatus" layoutX="384.0" layoutY="99.0" prefHeight="25.0" prefWidth="180.0" />
+                  <TextField fx:id="txtCategory" layoutX="384.0" layoutY="31.0" prefHeight="25.0" prefWidth="180.0" />
+                  <TextField fx:id="txtAuthor" layoutX="79.0" layoutY="99.0" prefHeight="25.0" prefWidth="180.0" />
+                  <TextField fx:id="txtYear" layoutX="79.0" layoutY="167.0" prefHeight="25.0" prefWidth="180.0" />
+                  <Label layoutX="29.0" layoutY="171.0" text="Año:" />
+                  <TextField fx:id="txtRating" layoutX="384.0" layoutY="167.0" prefHeight="25.0" prefWidth="180.0" />
+                  <Label layoutX="301.0" layoutY="171.0" text="Calificación:" />
+                  <Label layoutX="37.0" layoutY="219.0" text="Id:" />
+                  <TextField fx:id="txtId" layoutX="79.0" layoutY="219.0" prefHeight="25.0" prefWidth="180.0" />
                </children>
             </AnchorPane>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="282.0" prefWidth="865.0">
                <children>
                   <TableView fx:id="tableBook" layoutX="3.0" layoutY="65.0" prefHeight="249.0" prefWidth="586.0">
                      <columns>
-                        <TableColumn fx:id="tcTitle" prefWidth="142.0" text="Título" />
+                        <TableColumn fx:id="tcId" prefWidth="40.0" text="Id" />
+                        <TableColumn fx:id="tcTitle" prefWidth="177.0" text="Título" />
                         <TableColumn fx:id="tcAuthor" minWidth="0.0" prefWidth="127.0" text="Autor" />
                         <TableColumn fx:id="tcYear" prefWidth="46.0" text="Año" />
                         <TableColumn fx:id="tcCategory" prefWidth="126.0" text="Categoría" />
@@ -41,7 +44,7 @@
                         <TableColumn fx:id="tcRating" prefWidth="74.0" text="Calificación" />
                      </columns>
                   </TableView>
-                  <Button fx:id="btnEliminar" layoutX="253.0" layoutY="336.0" mnemonicParsing="false" onAction="#onEliminarar" prefHeight="25.0" prefWidth="88.0" text="Eliminar libro" />
+                  <Button fx:id="btnEliminar" layoutX="253.0" layoutY="336.0" mnemonicParsing="false" onAction="#onDelete" prefHeight="25.0" prefWidth="88.0" text="Eliminar libro" />
                   <TextField fx:id="txtFiltrarLibro" layoutX="94.0" layoutY="23.0" prefHeight="25.0" prefWidth="380.0" />
                   <Label layoutX="29.0" layoutY="27.0" text="Filtrar por:" />
                </children>

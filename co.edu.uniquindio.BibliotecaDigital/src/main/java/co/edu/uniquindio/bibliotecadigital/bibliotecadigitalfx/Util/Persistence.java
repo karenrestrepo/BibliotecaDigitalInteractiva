@@ -1,6 +1,7 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Administrator;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
@@ -13,15 +14,21 @@ public class Persistence {
     private static Person currentUser;
     private static final String READERS_FILE = "src/main/resources/Archivos/Readers/Readers.txt";
     private static final String ADMINS_FILE = "src/main/resources/Archivos/Administrators/Administrators.txt";
+    private static final String BOOKS_FILE = "src/main/resources/Archivos/Books/Books.txt";
+
 
     private HashMap<String, Reader> readers; // Key: username
     private HashMap<String, Administrator> administrators;
 
+    private HashMap<String, Book> books;
+
     public Persistence() {
         readers = new HashMap<>();
         administrators = new HashMap<>();
+        books = new HashMap<>();
         loadReadersFromFile();
         loadAdmin(); // always ensures admin exists
+        loadBooksFromFile();
     }
 
     private void loadAdmin() {
@@ -99,6 +106,47 @@ public class Persistence {
         return null;
     }
 
+    public void loadBooksFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(BOOKS_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 5) {
+                    String id = parts[0].trim();
+                    String title = parts[1].trim();
+                    String author = parts[2].trim();
+                    int year = Integer.parseInt(parts[3].trim());
+                    String category = parts[4].trim();
+                    Book book = new Book(id, title, author, year, category);
+                    books.put(id, book); // insertamos en el mapa por ID
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading books: " + e.getMessage());
+        }
+    }
+
+    public void saveBookToFile(Book book) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(BOOKS_FILE, true))) {
+            writer.write(book.getIdBook() + "," + book.getTitle() + "," + book.getAuthor() + "," + book.getYear() + "," + book.getCategory());
+            writer.newLine();
+        } catch (IOException e) {
+            System.out.println("Error saving book: " + e.getMessage());
+        }
+    }
+
+    public void saveAllBooks() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(BOOKS_FILE))) {
+            for (Book book : books.values()) {
+                writer.write(book.getIdBook() + "," + book.getTitle() + "," + book.getAuthor() + "," + book.getYear() + "," + book.getCategory());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error writing books: " + e.getMessage());
+        }
+    }
+
+
     public LinkedList<Reader> getAllReaders() {
         LinkedList<Reader> list = new LinkedList<>();
         LinkedList<String> keys = readers.keySet();
@@ -117,6 +165,10 @@ public class Persistence {
 
     public static void setCurrentUser(Person user) {
         currentUser = user;
+    }
+
+    public HashMap<String, Book> getBooks() {
+        return books;
     }
 
     public HashMap<String, Reader> getReaders() {
