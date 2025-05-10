@@ -280,4 +280,84 @@ public class LinkedList<T> implements Iterable<T> {
     public void setSize(int size) {
         this.size = size;
     }
+    @SuppressWarnings("unchecked")
+    public void priority(T element) {
+        try {
+            int priority = (int) element.getClass().getMethod("getPriority").invoke(element);
+
+            ListNode<T> newNode = new ListNode<>(element);
+
+            if (isEmpty()) {
+                firstNode = lastNode = newNode;
+            } else if (getPriorityValue(firstNode.getAmountNodo()) > priority) {
+                // Insertar al inicio
+                newNode.setNextNodo(firstNode);
+                firstNode = newNode;
+            } else {
+                ListNode<T> current = firstNode;
+                while (current.getNextNodo() != null && getPriorityValue(current.getNextNodo().getAmountNodo()) <= priority) {
+                    current = current.getNextNodo();
+                }
+                newNode.setNextNodo(current.getNextNodo());
+                current.setNextNodo(newNode);
+
+                if (newNode.getNextNodo() == null) {
+                    lastNode = newNode;
+                }
+            }
+
+            size++;
+        } catch (Exception e) {
+            throw new RuntimeException("El elemento debe tener un método getPriority() que retorne int");
+        }
+    }
+
+    private int getPriorityValue(T element) throws Exception {
+        return (int) element.getClass().getMethod("getPriority").invoke(element);
+    }
+
+    public void add(int index, T element) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + index);
+        }
+
+        ListNode<T> newNode = new ListNode<>(element);
+
+        if (index == 0) {
+            newNode.setNextNodo(firstNode);
+            firstNode = newNode;
+            if (size == 0) {
+                lastNode = newNode;
+            }
+        } else {
+            ListNode<T> current = firstNode;
+            for (int i = 0; i < index - 1; i++) {
+                current = current.getNextNodo();
+            }
+            newNode.setNextNodo(current.getNextNodo());
+            current.setNextNodo(newNode);
+            if (newNode.getNextNodo() == null) {
+                lastNode = newNode;
+            }
+        }
+
+        size++;
+    }
+
+    public T poll() {
+        if (isEmpty()) {
+            return null;
+        }
+
+        T element = firstNode.getAmountNodo();
+        firstNode = firstNode.getNextNodo();
+        size--;
+
+        if (firstNode == null) {
+            lastNode = null;
+        }
+
+        return element;
+    }
+
 }

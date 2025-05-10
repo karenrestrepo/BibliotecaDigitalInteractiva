@@ -5,7 +5,9 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Administrator;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -64,7 +66,6 @@ public class LoginController {
         }
 
         Object user = persistence.login(username, password);
-
 
         if (user instanceof Administrator) {
             openView("/co/edu/uniquindio/bibliotecadigital/bibliotecadigitalfx/AdministratorView.fxml");
@@ -125,7 +126,6 @@ public class LoginController {
 
     @FXML
     void initialize() {
-
 
     }
 }

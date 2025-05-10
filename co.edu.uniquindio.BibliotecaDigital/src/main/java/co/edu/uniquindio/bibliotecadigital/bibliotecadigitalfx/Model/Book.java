@@ -27,8 +27,6 @@ public class Book {
 
     public Book(){}
 
-    // Getters and setters
-
     public String getIdBook() {
         return idBook;
     }

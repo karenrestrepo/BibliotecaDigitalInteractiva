@@ -14,7 +14,15 @@ public class LibraryUtil {
         reader.setName("Ana");
         reader.setUsername("Ana@gmail.com");
         reader.setPassword("Ana123");
+
         library.getReadersList().addBeginning(reader);
+
+        Reader reader1 = new Reader();
+        reader.setName("Tomas");
+        reader.setUsername("Tomas@gmail.com");
+        reader.setPassword("Tomas123");
+
+        library.getReadersList().addBeginning(reader1);
 
         Administrator administrator = new Administrator();
         administrator.setName("Manuela");
@@ -30,6 +38,16 @@ public class LibraryUtil {
         book.setAverageRating(0);
 
         library.getBookssList().addBeginning(book);
+
+        Book book1 = new Book();
+        book.setTitle("If I stay");
+        book.setAuthor("Socrates");
+        book.setCategory("Apologia de Socrates");
+        book.setYear(2013);
+        book.setStatus(BookStatus.AVAILABLE);
+        book.setAverageRating(5);
+
+        library.getBookssList().addBeginning(book1);
 
 
         return library;

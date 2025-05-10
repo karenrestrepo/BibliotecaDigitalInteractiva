@@ -1,20 +1,23 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.ResourceBundle;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
 public class HomeController {
+
+    Library library;
+    ObservableList<Book> listBooks;
+
 
     @FXML
     private ResourceBundle resources;
@@ -26,40 +29,49 @@ public class HomeController {
     private Button btnRequestBook;
 
     @FXML
-    private TableView<?> tbBooks;
+    private TableView<Book> tbBooks;
 
     @FXML
-    private TableColumn<?, ?> tcAuthor;
+    private TableColumn<String, Book> tcAuthor;
 
     @FXML
-    private TableColumn<?, ?> tcCategory;
+    private TableColumn<String, Book> tcCategory;
 
     @FXML
-    private TableColumn<?, ?> tcRating;
+    private TableColumn<String , Book> tcRating;
 
     @FXML
-    private TableColumn<?, ?> tcStatus;
+    private TableColumn<String , Book> tcStatus;
 
     @FXML
-    private TableColumn<?, ?> tcTitle;
+    private TableColumn<String, Book> tcTitle;
 
     @FXML
-    private TableColumn<?, ?> tcYear;
+    private TableColumn<String, Book> tcYear;
 
     @FXML
     private TextField txtSearchBook;
 
     @FXML
     void onRequestBook(ActionEvent event) {
-        String isbn = txtSearchBook.getText();
-        requestBook(isbn);
+        String tittle = txtSearchBook.getText();
+        requestBook(tittle);
     }
 
 
     @FXML
     void initialize() {
+        initDataBuilding();
+        library = LibraryUtil.initializeData();
+    }
 
+    private void initDataBuilding() {
+        inicializeTable();
+    }
 
+    private void inicializeTable() {
+        listBooks.addAll((Collection<? extends Book>) library.getBookssList());
+        tbBooks.setItems(listBooks);
     }
 
     private void requestBook(String title) {

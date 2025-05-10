@@ -30,8 +30,6 @@ public class Library {
             persistence.saveBookToFile(newbook);
 
             return newbook;
-
-
     }
 
     public boolean removeBook(String id) {
@@ -45,12 +43,10 @@ public class Library {
         return true;
     }
 
-
     private Book getBookById(String id) {
         return books.get(id);
 
     }
-
 
     private void verifyBookDoesNotExist(String id) {
         if (bookExists(id)) {
@@ -58,19 +54,10 @@ public class Library {
         }
     }
 
-
-
     public boolean bookExists(String id) {
         return books.containsKey(id);
 
     }
-
-
-
-
-
-
-
 
     public LinkedList<Reader> getReadersList() {
         return readersList;
