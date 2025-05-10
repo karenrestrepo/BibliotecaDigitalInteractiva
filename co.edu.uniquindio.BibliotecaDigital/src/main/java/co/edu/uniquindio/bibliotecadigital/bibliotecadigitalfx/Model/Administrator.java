@@ -25,40 +25,45 @@ public class Administrator extends Person {
 
     public boolean removeBook(Book book){
         if (book != null){
-            library.getBookssList().remove(book);
+            library.getBookssList().delete(book);
             return true;
         }
         return false;
     }
 
     // Gestionar usuarios.
-    public boolean addUser(Person person){
-        if (person != null && !library.getUserList().contains(person)){
-            library.getUserList().add(person);
+    public boolean addUser(Reader person){
+        if (person != null && !library.getReadersList().contains(person)){
+            library.getReadersList().add(person);
             return true;
         }
         return false;
     }
 
-    public boolean removeUser(Person person){
+    public boolean removeUser(Reader person){
         if (person != null){
-            return library.getUserList().remove(person);
+            library.getReadersList().delete(person);
+            return true;
         }
         return false;
     }
 
-    // Visualizar el grafo de afinidad entre lectores.
+    /**
+     * Visualizar el grafo de afinidad entre lectores.
+
+
     public Graph<Person> getAffinityGraph(){
         return library.getAffinityGraph();
-    }
+    } *
+     * */
 
     // Cantidad de préstamos por lector.
     public Map<Person, Integer> getLoansPerReader(){
         Map<Person, Integer> loansMap = new HashMap<>();
-        for (Loan loan : library.getLoanList()) {
-            Person reader = loan.getReader();
-            loansMap.put(reader, loansMap.getOrDefault(reader, 0) + 1);
-        }
+        //for (Loan loan : library.getBookssList()) {
+          //  Person reader = loan.getReader();
+     //       loansMap.put(reader, loansMap.getOrDefault(reader, 0) + 1);
+       // }
         return loansMap;
     }
 
@@ -82,15 +87,31 @@ public class Administrator extends Person {
     }
 
     // Caminos más cortos entre dos lectores.
-    public List<Person> getShortestPathBetweenReaders(Person a, Person b){
+    public java.util.LinkedList<Person> getShortestPathBetweenReaders(Person a, Person b){
         Graph<Person> graph = getAffinityGraph();
-        return graph.getShortestPath(a, b); // Suponiendo método en Graph
+        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<Person> customPath = graph.getShortestPath(a, b);
+
+        java.util.LinkedList<Person> standardPath = new java.util.LinkedList<>();
+        for (Person person : customPath) {
+            standardPath.add(person);
+        }
+
+        return standardPath;
     }
+
 
     // Detectar clústeres de afinidad (grupos).
     public List<Set<Person>> detectAffinityClusters(){
         Graph<Person> graph = getAffinityGraph();
-        return graph.getConnectedComponents(); // Suponiendo método en Graph
+        co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList<HashSet<Person>> customComponents = graph.getConnectedComponents();
+
+        List<Set<Person>> standardComponents = new java.util.ArrayList<>();
+        for (HashSet<Person> component : customComponents) {
+            standardComponents.add(component);
+        }
+
+        return standardComponents;
     }
+
 }
 

@@ -3,6 +3,10 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.ListNode;
 
 import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class LinkedList<T> implements Iterable<T> {
 
@@ -359,5 +363,13 @@ public class LinkedList<T> implements Iterable<T> {
 
         return element;
     }
+
+    public Stream<T> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED),
+                false
+        );
+    }
+
 
 }
