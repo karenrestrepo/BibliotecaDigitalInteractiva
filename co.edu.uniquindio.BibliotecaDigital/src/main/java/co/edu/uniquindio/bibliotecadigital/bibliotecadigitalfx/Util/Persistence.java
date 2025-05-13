@@ -1,8 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util;
 
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Administrator;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
@@ -158,7 +156,6 @@ public class Persistence {
         }
         return list;
     }
-
     public static Person getCurrentUser() {
         return currentUser;
     }
@@ -174,4 +171,5 @@ public class Persistence {
     public HashMap<String, Reader> getReaders() {
         return readers;
     }
+
 }

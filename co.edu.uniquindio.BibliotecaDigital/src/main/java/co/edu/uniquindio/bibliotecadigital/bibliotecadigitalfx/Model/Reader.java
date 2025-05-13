@@ -30,16 +30,17 @@ public class Reader extends Person {
         }
         throw new RuntimeException("No se encontró el libro con título: " + title);
     }
-    public static Book getBookByAutor(String autor, Library library) {
-        LinkedList<Book> books = new LinkedList<>();
+    public static List<Book> getBooksByAuthor(String author, Library library) {
+        List<Book> results = new ArrayList<>();
         for (int i = 0; i < library.getBookssList().getSize(); i++) {
             Book book = library.getBookssList().getAmountNodo(i);
-            if (book.getTitle().equalsIgnoreCase(autor)) {
-                books.add(book);
+            if (book.getAuthor().equalsIgnoreCase(author)) {
+                results.add(book);
             }
         }
-        throw new RuntimeException("No se encontró el libro con autor: " + autor);
+        return results;
     }
+
     public static Book getBookByYear(String year, Library library) {
         LinkedList<Book> books = new LinkedList<>();
         for (int i = 0; i < library.getBookssList().getSize(); i++) {
@@ -51,16 +52,15 @@ public class Reader extends Person {
         throw new RuntimeException("No se encontró el libro con año: " + year);
     }
 // metodo prestar libro
-public static void lendBook(Book book, Object user) {
-    if (book.getStatus() == BookStatus.AVAILABLE) {
-        book.setStatus(BookStatus.CHECKED_OUT); // Cambia estado
-        if (user instanceof Reader reader) {
-            reader.loanHistoryList.add(book);
+    public void lendBook(Book book) {
+        if (book.getStatus() == BookStatus.AVAILABLE) {
+            book.setStatus(BookStatus.CHECKED_OUT);
+         this.loanHistoryList.add(book);
+        } else {
+            throw new RuntimeException("El libro no está disponible.");
         }
-    } else {
-        throw new RuntimeException("El libro no está disponible para préstamo.");
     }
-}
+
 
     //Devolver libros.
     public void returnBook(Book book) {

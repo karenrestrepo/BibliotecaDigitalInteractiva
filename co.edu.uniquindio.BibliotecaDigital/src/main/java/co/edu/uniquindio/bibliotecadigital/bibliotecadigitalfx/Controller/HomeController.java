@@ -1,5 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.ResourceBundle;
@@ -8,16 +9,20 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 public class HomeController {
 
-    Library library;
-    ObservableList<Book> listBooks;
-
+    private Library library;
+    private ObservableList<Book> listBooks = FXCollections.observableArrayList();
 
     @FXML
     private ResourceBundle resources;
@@ -32,79 +37,87 @@ public class HomeController {
     private TableView<Book> tbBooks;
 
     @FXML
-    private TableColumn<String, Book> tcAuthor;
+    private TableColumn<Book, String> tcAuthor;
 
     @FXML
-    private TableColumn<String, Book> tcCategory;
+    private TableColumn<Book, String> tcCategory;
 
     @FXML
-    private TableColumn<String , Book> tcRating;
+    private TableColumn<Book, String> tcRating;
 
     @FXML
-    private TableColumn<String , Book> tcStatus;
+    private TableColumn<Book, String> tcStatus;
 
     @FXML
-    private TableColumn<String, Book> tcTitle;
+    private TableColumn<Book, String> tcTitle;
 
     @FXML
-    private TableColumn<String, Book> tcYear;
+    private TableColumn<Book, String> tcYear;
 
     @FXML
     private TextField txtSearchBook;
 
     @FXML
     void onRequestBook(ActionEvent event) {
-        String tittle = txtSearchBook.getText();
-        requestBook(tittle);
+        String title = txtSearchBook.getText();
+        if (!title.isEmpty()) {
+            requestBook(title);
+        } else {
+            showAlert(Alert.AlertType.WARNING, "Campo vacío", "Por favor ingrese un título para buscar.");
+        }
     }
 
+    @FXML
+    private void onToMyProfile() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/ReaderView.fxml"));//Aqui va fxml del perfil del lector
+            Parent root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Register Reader");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @FXML
     void initialize() {
-        initDataBuilding();
         library = LibraryUtil.initializeData();
+        initDataBuilding();
     }
 
     private void initDataBuilding() {
-        inicializeTable();
+        initializeTable();
     }
 
-    private void inicializeTable() {
-        listBooks.addAll((Collection<? extends Book>) library.getBookssList());
+    private void initializeTable() {
+        listBooks.addAll(library.getBookssList().stream().toList());
         tbBooks.setItems(listBooks);
     }
 
     private void requestBook(String title) {
-        Library library = LibraryUtil.initializeData();
         Book book = Reader.getBookByTittle(title, library);
 
-
         if (book != null && book.getStatus() == BookStatus.AVAILABLE) {
-            // Obtén el usuario actual (lector o administrador)
             Person user = Persistence.getCurrentUser();
 
-            if (user instanceof Reader) {
-                // Realiza el préstamo del libro
-                Reader.lendBook(book,(Reader) user);
-
+            if (user instanceof Reader reader) {
+                reader.lendBook(book);
                 tbBooks.refresh();
-
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Préstamo exitoso");
-                alert.setContentText("El libro ha sido prestado con éxito.");
-                alert.showAndWait();
+                showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso", "El libro ha sido prestado con éxito.");
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error de préstamo");
-                alert.setContentText("No tienes permisos para realizar préstamos.");
-                alert.showAndWait();
+                showAlert(Alert.AlertType.ERROR, "Error de préstamo", "No tienes permisos para realizar préstamos.");
             }
         } else {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error de préstamo");
-            alert.setContentText("El libro no existe o no está disponible para préstamo.");
-            alert.showAndWait();
+            showAlert(Alert.AlertType.ERROR, "Error de préstamo", "El libro no está disponible para préstamo.");
         }
     }
-}
 
+    private void showAlert(Alert.AlertType type, String title, String content) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+}
