@@ -1,12 +1,15 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Administrator extends Person {
     Library library;
+
 
     public Administrator(String name, String username, String password, Library library) {
         super(name, username, password);
@@ -54,7 +57,8 @@ public class Administrator extends Person {
     //Visualizar el grafo de afinidad entre lectores.
 
     public Graph<Reader> getAffinityGraph(){
-        return library.getAffinityGraph();
+        LibrarySystem fx = new LibrarySystem();//Hay que corregir
+        return fx.getAffinityGraph();
     }
 
     // Cantidad de préstamos por lector.

@@ -9,4 +9,6 @@ module co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx {
     opens co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
     exports co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+    opens co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.pruebas;
+    exports co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.pruebas;
 }

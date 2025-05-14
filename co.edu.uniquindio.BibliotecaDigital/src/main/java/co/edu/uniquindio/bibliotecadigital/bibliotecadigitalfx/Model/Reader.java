@@ -1,8 +1,10 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,15 @@ import java.util.Set;
 public class Reader extends Person {
     private LinkedList<Book> loanHistoryList;
     private LinkedList<Rating> ratingsList;
+    private Library library = new Library();
+
+    public Reader(String name, String username, String password, Library library) {
+        super(name, username, password);
+        this.loanHistoryList = new LinkedList<>();
+        this.ratingsList = new LinkedList<>();
+        this.library = library;
+    }
+
     public Reader() {
 
     }
@@ -30,7 +41,8 @@ public class Reader extends Person {
         }
         throw new RuntimeException("No se encontró el libro con título: " + title);
     }
-    public static List<Book> getBooksByAuthor(String author, Library library) {
+
+    public List<Book> getBooksByAuthor(String author) {
         List<Book> results = new ArrayList<>();
         for (int i = 0; i < library.getBookssList().getSize(); i++) {
             Book book = library.getBookssList().getAmountNodo(i);
@@ -41,7 +53,7 @@ public class Reader extends Person {
         return results;
     }
 
-    public static Book getBookByYear(String year, Library library) {
+    public Book getBookByYear(String year) {
         LinkedList<Book> books = new LinkedList<>();
         for (int i = 0; i < library.getBookssList().getSize(); i++) {
             Book book = library.getBookssList().getAmountNodo(i);
@@ -51,6 +63,7 @@ public class Reader extends Person {
         }
         throw new RuntimeException("No se encontró el libro con año: " + year);
     }
+
 // metodo prestar libro
     public void lendBook(Book book) {
         if (book.getStatus() == BookStatus.AVAILABLE) {
@@ -60,7 +73,6 @@ public class Reader extends Person {
             throw new RuntimeException("El libro no está disponible.");
         }
     }
-
 
     //Devolver libros.
     public void returnBook(Book book) {
@@ -81,6 +93,7 @@ public class Reader extends Person {
         // Solo se añade el número de estrellas al libro (no el comentario)
         book.addRating(stars);
     }
+
     //Consultar recomendaciones de libros según valoraciones propias.
     public List<Book> getRecommendations() {
         LinkedList<Book> recommendations = new LinkedList<>();
@@ -100,8 +113,9 @@ public class Reader extends Person {
         }
         return recommendations.stream().toList();
     }
+
     //Ver sugerencias de lectores con gustos similares.
-    public List<Reader> getSuggestions(Library library) {
+    public List<Reader> getSuggestions(LibrarySystem library) {
         Graph<Reader> graph = library.getAffinityGraph();
         Set<Reader> connections = graph.getAdjacentVertices(this);  // ✅ corregido
 
@@ -118,6 +132,7 @@ public class Reader extends Person {
     public void sendMessage(Reader recipient, String message) {
         System.out.println("Mensaje de " + getUsername() + " para " + recipient.getUsername() + ": " + message);
     }
+
     public LinkedList<Book> getLoanHistoryList() {
         return loanHistoryList;
     }

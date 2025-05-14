@@ -67,19 +67,6 @@ public class HomeController {
         }
     }
 
-    @FXML
-    private void onToMyProfile() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/ReaderView.fxml"));//Aqui va fxml del perfil del lector
-            Parent root = loader.load();
-            Stage stage = new Stage();
-            stage.setTitle("Register Reader");
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     @FXML
     void initialize() {

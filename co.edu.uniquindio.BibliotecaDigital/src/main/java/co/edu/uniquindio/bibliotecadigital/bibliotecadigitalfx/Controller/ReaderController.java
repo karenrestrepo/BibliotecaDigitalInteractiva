@@ -3,6 +3,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.fxml.FXML;
@@ -52,13 +53,22 @@ public class ReaderController {
     public void setPersistence(Persistence persistence) {
         this.persistence = persistence;
     }
-    private void loadReaderData() {
+    public void loadReaderData() {
         if (reader != null && library != null) {
             loansListView.getItems().addAll(reader.getLoanHistoryList().stream().toList());
             recommendationsListView.getItems().addAll(reader.getRecommendations());
-            friendsListView.getItems().addAll(reader.getSuggestions(library).stream().map(r -> r.getUsername()).toList());
+
+            // Asegúrate de pasar el tipo correcto, por ejemplo, si necesitas un LibrarySystem:
+            LibrarySystem librarySystem = getLibrarySystemFromLibrary(library);
+            friendsListView.getItems().addAll(reader.getSuggestions(librarySystem).stream().map(r -> r.getUsername()).toList());
         }
     }
+
+    private LibrarySystem getLibrarySystemFromLibrary(Library library) {
+        // Lógica para obtener LibrarySystem desde Library
+        return new LibrarySystem(); // O alguna otra lógica que tengas
+    }
+
 
     @FXML
     private void handleSearch() {

@@ -1,6 +1,10 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.*;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Graph<T> {
 
@@ -105,6 +109,11 @@ public class Graph<T> {
                 dfs(neighbor, visited, component);
             }
         }
+    }
+
+    // Método opcional para exponer el mapa interno si lo necesitas
+    public Map<T, Set<T>> getAdjacencyList() {
+        return (Map<T, Set<T>>) adjacencyList;
     }
 
     @Override
