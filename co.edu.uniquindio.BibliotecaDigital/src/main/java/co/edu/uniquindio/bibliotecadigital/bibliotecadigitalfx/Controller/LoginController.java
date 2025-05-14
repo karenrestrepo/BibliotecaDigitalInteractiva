@@ -48,6 +48,7 @@ public class LoginController {
 
     @FXML
     private TextField txtNewUser;
+    Library library;
 
     private Persistence persistence;
     public void setPersistence(Persistence persistence) {
@@ -87,7 +88,7 @@ public class LoginController {
             return;
         }
 
-        boolean success = persistence.registerReader(name, username, password);
+        boolean success = library.registerReader(name, username, password);
         if (success) {
             showAlert("Registro exitoso", "El lector ha sido registrado correctamente.");
             txtNewName.clear();

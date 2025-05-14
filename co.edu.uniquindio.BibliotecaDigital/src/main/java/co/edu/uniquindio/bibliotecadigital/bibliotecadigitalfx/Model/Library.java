@@ -16,6 +16,9 @@ public class Library {
     LinkedList<Book> bookssList = new LinkedList<>();
     LinkedList<Administrator> administrators = new LinkedList<>();
 
+    public Library() {
+    }
+
 
     public Book  createBook(String id, String title, String author, int year, String category){
         Book newbook = null;
@@ -42,6 +45,17 @@ public class Library {
         persistence.saveAllBooks();
 
         return true;
+    }
+
+    public boolean registerReader(String name, String username, String password) {
+        if (persistence.getReaders().get(username) == null) {
+            Reader reader = new Reader(name, username, password);
+            persistence.saveReaderToFile(reader); // guardamos en el archivo
+            persistence.getReaders().put(username, reader); // guardamos en el HashMap
+            readersList.addEnd(reader); // agregamos a la lista en memoria
+            return true;
+        }
+        return false;
     }
 
     private Book getBookById(String id) {

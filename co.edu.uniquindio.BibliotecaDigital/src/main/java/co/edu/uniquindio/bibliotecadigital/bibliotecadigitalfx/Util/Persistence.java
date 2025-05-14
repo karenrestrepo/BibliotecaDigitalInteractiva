@@ -65,7 +65,7 @@ public class Persistence {
         }
     }
 
-    private void saveReaderToFile(Reader reader) {
+    public void saveReaderToFile(Reader reader) {
         if (readers.containsKey(reader.getUsername())) {
             System.out.println("El lector ya está registrado.");
             return;
@@ -78,16 +78,6 @@ public class Persistence {
         } catch (IOException e) {
             System.out.println("Error saving reader: " + e.getMessage());
         }
-    }
-
-    public boolean registerReader(String name, String username, String password) {
-        if (readers.get(username) == null) {
-            Reader reader = new Reader(name, username, password);
-            readers.put(username, reader);
-            saveReaderToFile(reader);
-            return true;
-        }
-        return false;
     }
 
     public Person login(String username, String password) {
