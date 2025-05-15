@@ -13,14 +13,13 @@ import java.util.Set;
 public class Reader extends Person {
     private LinkedList<Book> loanHistoryList;
     private LinkedList<Rating> ratingsList;
-    private Library library = new Library();
+    private Library library;
 
     public Reader(String name, String username, String password, Library library) {
         super(name, username, password);
         this.loanHistoryList = new LinkedList<>();
         this.ratingsList = new LinkedList<>();
-        this.library = library;
-    }
+        this.library = library;  }
 
     public Reader() {
 
@@ -42,10 +41,9 @@ public class Reader extends Person {
         throw new RuntimeException("No se encontró el libro con título: " + title);
     }
 
-    public List<Book> getBooksByAuthor(String author) {
+    public List<Book> getBooksByAuthor(String author, Library library) {
         List<Book> results = new ArrayList<>();
-        for (int i = 0; i < library.getBookssList().getSize(); i++) {
-            Book book = library.getBookssList().getAmountNodo(i);
+        for (Book book : library.getBooks().values()) {
             if (book.getAuthor().equalsIgnoreCase(author)) {
                 results.add(book);
             }
@@ -137,4 +135,11 @@ public class Reader extends Person {
         return loanHistoryList;
     }
 
+    public Library getLibrary() {
+        return library;
+    }
+
+    public void setLibrary(Library library) {
+        this.library = library;
+    }
 }

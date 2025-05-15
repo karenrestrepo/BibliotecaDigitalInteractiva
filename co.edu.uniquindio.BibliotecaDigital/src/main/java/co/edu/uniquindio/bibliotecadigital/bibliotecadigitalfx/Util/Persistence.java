@@ -9,9 +9,11 @@ import java.io.*;
 
 public class Persistence {
 
+
+
     private static Person currentUser;
-    private static final String READERS_FILE = "src/main/resources/Archivos/Readers/Readers.txt";
-    private static final String ADMINS_FILE = "src/main/resources/Archivos/Administrators/Administrators.txt";
+    private static final String READERS_FILE = "co.edu.uniquindio.BibliotecaDigital/src/main/resources/Archivos/Readers/Readers.txt";
+    private static final String ADMINS_FILE = "co.edu.uniquindio.BibliotecaDigital/src/main/resources/Archivos/Administrators/Administrators.txt";
     private static final String BOOKS_FILE = "src/main/resources/Archivos/Books/Books.txt";
 
 
@@ -35,9 +37,9 @@ public class Persistence {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
-                    String name = parts[0].trim();
-                    String username = parts[1].trim();
-                    String password = parts[2].trim();
+                    String name = parts[0];
+                    String username = parts[1];
+                    String password = parts[2];
                     administrators.put(username, new Administrator(name, username, password));
                 }
             }
@@ -52,10 +54,11 @@ public class Persistence {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
-                    String name = parts[0].trim();
-                    String username = parts[1].trim();
-                    String password = parts[2].trim();
+                    String name = parts[0];
+                    String username = parts[1];
+                    String password = parts[2];
 
+                    // Crea el Reader sin Library (se asignará después)
                     Reader r = new Reader(name, username, password);
                     readers.put(username, r);
                 }
@@ -146,6 +149,64 @@ public class Persistence {
         }
         return list;
     }
+
+    public boolean deleteReader(String username) {
+        LinkedList<Reader> readers = getAllReaders();
+        boolean removed = false;
+
+        for (int i = 0; i < readers.getSize(); i++) {
+            Reader r = readers.getAmountNodo(i);
+            if (r.getUsername().equals(username)) {
+                readers.delete(r);
+                removed = true;
+                break;
+            }
+        }
+
+        if (removed) {
+            saveReaders(readers);
+        }
+
+        return removed;
+    }
+
+
+    public boolean updateReader(String username, String newName, String newPassword) {
+        LinkedList<Reader> readers = getAllReaders();
+        boolean updated = false;
+
+        for (int i = 0; i < readers.getSize(); i++) {
+            Reader r = readers.getAmountNodo(i);
+            if (r.getUsername().equals(username)) {
+                r.setName(newName);
+                r.setPassword(newPassword);
+                updated = true;
+                break;
+            }
+        }
+
+        if (updated) {
+            saveReaders(readers);
+        }
+
+        return updated;
+    }
+
+    public void saveReaders(LinkedList<Reader> readers) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(READERS_FILE))) {
+            for (int i = 0; i < readers.getSize(); i++) {
+                Reader r = readers.getAmountNodo(i);
+                writer.write(r.getName() + "," + r.getUsername() + "," + r.getPassword());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving readers: " + e.getMessage());
+        }
+    }
+
+
+
+
     public static Person getCurrentUser() {
         return currentUser;
     }

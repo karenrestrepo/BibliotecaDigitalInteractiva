@@ -8,7 +8,7 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.collections.ObservableList;
 
 public class Library {
-    Persistence persistence = new Persistence();
+    Persistence persistence;
 
     private HashMap<String, Book> books = new HashMap<>();
 
@@ -16,9 +16,17 @@ public class Library {
     LinkedList<Book> bookssList = new LinkedList<>();
     LinkedList<Administrator> administrators = new LinkedList<>();
 
+
     public Library() {
+        this.persistence = new Persistence();
+        for (Reader reader : persistence.getAllReaders()) {
+            reader.setLibrary(this);
+        }
     }
 
+    public Library(Persistence persistence) {
+        this.persistence = persistence;
+    }
 
     public Book  createBook(String id, String title, String author, int year, String category){
         Book newbook = null;
@@ -56,6 +64,13 @@ public class Library {
             return true;
         }
         return false;
+    }
+    public boolean deleteReader(String username) {
+        return persistence.deleteReader(username); // implementado en Persistence
+    }
+
+    public boolean updateReader(String username, String newName, String newPassword) {
+        return persistence.updateReader(username, newName, newPassword); // implementado en Persistence
     }
 
     private Book getBookById(String id) {
@@ -105,4 +120,7 @@ public class Library {
     }
 
 
+    public LinkedList<Reader> getReaders() {
+        return persistence.getAllReaders();
+    }
 }
