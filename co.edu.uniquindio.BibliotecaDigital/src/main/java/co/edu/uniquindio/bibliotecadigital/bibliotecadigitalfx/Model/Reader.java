@@ -84,8 +84,8 @@ public class Reader extends Person {
     }
 
     //Valorar libros.
-    public void rateBook(Book book, int stars, String comment) {
-        Rating rating = new Rating(book, stars, comment);
+    public void rateBook(Reader reader, Book book, int stars, String comment) {
+        Rating rating = new Rating(reader, book, stars, comment);
         ratingsList.add(rating);
 
         // Solo se añade el número de estrellas al libro (no el comentario)

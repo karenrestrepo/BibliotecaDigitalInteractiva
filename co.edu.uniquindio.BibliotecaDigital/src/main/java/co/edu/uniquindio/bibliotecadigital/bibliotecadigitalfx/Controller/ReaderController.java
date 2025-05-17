@@ -11,6 +11,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Text;
 
+import java.io.IOException;
+
 public class ReaderController {
     private Reader reader;
     private Library library;
@@ -41,7 +43,7 @@ public class ReaderController {
     @FXML
     private Pane graphPane;
 
-    public void setLector(Reader reader) {
+    public void setLector(Reader reader) throws IOException {
         this.reader = reader;
         this.library = getLibraryFromPersistence();
         loadReaderData();
@@ -95,7 +97,7 @@ public class ReaderController {
         }
     }
 
-    private Library getLibraryFromPersistence() {
+    private Library getLibraryFromPersistence() throws IOException {
         // Método temporal mientras no exista Persistence.getLibrary()
         return LibraryUtil.initializeData(); // Asume que Library tiene un singleton o acceso global similar
     }

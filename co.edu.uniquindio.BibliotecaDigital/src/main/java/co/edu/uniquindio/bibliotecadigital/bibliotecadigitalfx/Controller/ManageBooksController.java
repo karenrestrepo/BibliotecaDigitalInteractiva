@@ -1,5 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -86,7 +87,7 @@ public class ManageBooksController {
     }
 
     @FXML
-    void initialize() {
+    void initialize() throws IOException {
         library = new Library();
         initView();
 

@@ -83,6 +83,11 @@ public class HashMap<K, V> {
         return result;
     }
 
+    public void clear(){
+        table = new MapNode[SIZE];
+    }
+
+
     public LinkedList<K> keySet() {
         LinkedList<K> keys = new LinkedList<>();
 

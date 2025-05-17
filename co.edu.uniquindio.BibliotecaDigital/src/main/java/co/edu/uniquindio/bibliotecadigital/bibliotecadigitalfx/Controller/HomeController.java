@@ -69,7 +69,7 @@ public class HomeController {
 
 
     @FXML
-    void initialize() {
+    void initialize() throws IOException {
         library = LibraryUtil.initializeData();
         initDataBuilding();
     }

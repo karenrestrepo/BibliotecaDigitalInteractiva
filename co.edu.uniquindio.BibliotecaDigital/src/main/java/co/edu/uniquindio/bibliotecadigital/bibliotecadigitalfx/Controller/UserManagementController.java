@@ -1,5 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -125,7 +126,7 @@ public class UserManagementController {
 
 
     @FXML
-    void initialize() {
+    void initialize() throws IOException {
         persistence = new Persistence();
         library = new Library(persistence);
 

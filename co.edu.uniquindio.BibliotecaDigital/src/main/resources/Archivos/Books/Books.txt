@@ -1,3 +1,1 @@
-02,Rosario Tijeras ,Jorge Franco Ramos,2010,Urbana
-
-
+02,Rosario Tijeras,Jorge Franco Ramos,2010,Urbana

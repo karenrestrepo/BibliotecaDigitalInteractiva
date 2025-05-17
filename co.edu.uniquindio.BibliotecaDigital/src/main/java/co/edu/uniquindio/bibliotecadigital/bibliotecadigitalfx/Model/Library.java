@@ -7,21 +7,46 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.collections.ObservableList;
 
+import java.io.File;
+import java.io.IOException;
+
 public class Library {
     Persistence persistence;
+    private static Library instance;
 
     private HashMap<String, Book> books = new HashMap<>();
 
     LinkedList<Reader> readersList = new LinkedList<>();
     LinkedList<Book> bookssList = new LinkedList<>();
     LinkedList<Administrator> administrators = new LinkedList<>();
-
-
+    private HashMap<String, Rating> ratings = new HashMap<>();
+    private Graph<String> readerConnections = new Graph<>();
     public Library() {
-        this.persistence = new Persistence();
-        for (Reader reader : persistence.getAllReaders()) {
-            reader.setLibrary(this);
+        // Constructor sin excepciones
+    }
+
+    private void initializePersistence() throws IOException {
+        if (persistence == null) {
+            persistence = new Persistence();
+            // Resto de inicialización
         }
+    }
+
+    // Los métodos que usen persistence deberían verificar primero
+    public void someMethod() {
+        try {
+            initializePersistence();
+            // Operaciones con persistence
+        } catch (IOException e) {
+            // Manejar error
+        }
+    }
+
+    public static synchronized Library getInstance() throws IOException {
+        if (instance == null) {
+            instance = new Library();
+        }
+        return instance;
     }
 
     public Library(Persistence persistence) {
@@ -72,6 +97,7 @@ public class Library {
 
         // Elimina el lector
         persistence.getReaders().remove(username);
+        readersList.delete(getReaderByUsername(username));
         persistence.saveReaders(persistence.getAllReaders());
         return true;
     }
@@ -80,7 +106,7 @@ public class Library {
         return persistence.updateReader(username, newName, newPassword); // implementado en Persistence
     }
 
-    private Book getBookById(String id) {
+    public Book getBookById(String id) {
         return books.get(id);
 
     }
@@ -102,6 +128,76 @@ public class Library {
         }
         return readersList;
     }
+
+    public String loadDataFromFile(File file) {
+        if (persistence == null) {
+            try {
+                this.persistence = new Persistence(); // Inicializa persistence si es null
+            } catch (IOException e) {
+                return "Error inicializando Persistence: " + e.getMessage();
+            }
+        }
+
+        try {
+            persistence.loadDataFromFile(file);
+            persistence.saveReaders(persistence.getAllReaders());
+            persistence.saveAllBooks();
+
+            refreshInternalData();
+            return "Datos cargados exitosamente desde: " + file.getName();
+        } catch (IOException e) {
+            return "Error al cargar datos: " + e.getMessage();
+        }
+    }
+    private void refreshInternalData() throws IOException {
+        // Limpiar estructuras existentes
+        readersList.clear();
+        books.clear();
+
+        // Recargar datos desde persistencia
+        for (Reader reader : persistence.getAllReaders()) {
+            reader.setLibrary(this);
+            readersList.addEnd(reader);
+        }
+
+        for (Book book : persistence.getBooks().values()) {
+            books.put(book.getIdBook(), book);
+        }
+    }
+
+    public Reader getReaderByUsername(String username) {
+        for (int i = 0; i < readersList.getSize(); i++) {
+            Reader reader = readersList.getAmountNodo(i);
+            if (reader.getUsername().equals(username)) {
+                return reader;
+            }
+        }
+        return null;
+    }
+
+
+    public void addRating(Rating rating) {
+        if (rating == null || rating.getReader() == null || rating.getBook() == null) {
+            throw new IllegalArgumentException("Rating inválido");
+        }
+
+        String key = rating.getReader().getUsername() + "|" + rating.getBook().getIdBook();
+        if (!ratings.containsKey(key)) {
+            ratings.put(key, rating);
+            persistence.saveRatingToFile(rating);
+        }
+    }
+
+
+    public void addConnection(Reader reader1, Reader reader2) {
+        if (getReaderByUsername(reader1.getUsername()) != null &&
+                getReaderByUsername(reader2.getUsername()) != null) {
+            readerConnections.addEdge(reader1.getUsername(), reader2.getUsername());
+            persistence.saveConnectionToFile(reader1.getUsername(), reader2.getUsername());
+        }
+    }
+
+
 
     public void setReadersList(LinkedList<Reader> readersList) {
         this.readersList = readersList;

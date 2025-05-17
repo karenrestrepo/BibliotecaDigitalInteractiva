@@ -6,8 +6,10 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 
+import java.io.IOException;
+
 public class LibraryUtil {
-    public static Library initializeData() {
+    public static Library initializeData() throws IOException {
         Library library = new Library();
 
         Reader reader = new Reader();

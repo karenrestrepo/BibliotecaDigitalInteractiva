@@ -19,7 +19,15 @@ import java.io.IOException;
 public class BibliotecaDigitalApplication extends Application {
 
     private static Stage primaryStage;
-    private static Persistence persistence = new Persistence(); // contenedor de datos
+    private static Persistence persistence; // contenedor de datos
+
+    static {
+        try {
+            persistence = new Persistence();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public void start(Stage stage) throws Exception {
