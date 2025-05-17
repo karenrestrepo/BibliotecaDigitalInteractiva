@@ -8,7 +8,6 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-
 <AnchorPane prefHeight="675.0" prefWidth="601.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.UserManagementController">
    <children>
       <SplitPane dividerPositions="0.3621212121212121" layoutX="4.0" layoutY="7.0" orientation="VERTICAL" prefHeight="662.0" prefWidth="594.0">
@@ -34,7 +33,7 @@
                      </columns>
                   </TableView>
                   <Button fx:id="btnDelete" layoutX="252.0" layoutY="375.0" mnemonicParsing="false" onAction="#onDelete" prefHeight="25.0" prefWidth="88.0" text="Eliminar" />
-                  <TextField fx:id="txtFilterbook" layoutX="94.0" layoutY="23.0" prefHeight="25.0" prefWidth="380.0" />
+                  <TextField fx:id="txtFilterReader" layoutX="94.0" layoutY="23.0" prefHeight="25.0" prefWidth="380.0" />
                   <Label layoutX="29.0" layoutY="27.0" text="Filtrar por:" />
                </children>
             </AnchorPane>

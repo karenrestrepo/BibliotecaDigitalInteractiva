@@ -5,8 +5,11 @@ import java.util.ResourceBundle;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -40,7 +43,7 @@ public class UserManagementController {
     private TableColumn<Reader, String> tcName;
 
     @FXML
-    private TextField txtFilterbook;
+    private TextField txtFilterReader;
 
     @FXML
     private TextField txtName;
@@ -142,14 +145,44 @@ public class UserManagementController {
             }
         });
 
+        txtFilterReader.textProperty().addListener((observable, oldValue, newValue) -> {
+            filterReaders(newValue);
+        });
+
         loadReadersTable();
     }
 
-    private void loadReadersTable() {
-        tableReader.getItems().clear();
-        for (int i = 0; i < library.getReaders().getSize(); i++) {
-            tableReader.getItems().add(library.getReaders().getAmountNodo(i));
+    private void filterReaders(String filterText) {
+        if (filterText == null || filterText.isEmpty()) {
+            // Si no hay texto, muestra todos los lectores
+            loadReadersTable();
+            return;
         }
+
+        LinkedList<Reader> allReaders = library.getReaders();
+        ObservableList<Reader> filteredList = FXCollections.observableArrayList();
+
+        for (int i = 0; i < allReaders.getSize(); i++) {
+            Reader reader = allReaders.getAmountNodo(i);
+            if (reader.getName().toLowerCase().contains(filterText.toLowerCase())) {
+                filteredList.add(reader);
+            }
+        }
+
+        tableReader.setItems(filteredList);
+        tableReader.refresh();
+    }
+
+    private void loadReadersTable() {
+        ObservableList<Reader> readersList = FXCollections.observableArrayList();
+        LinkedList<Reader> readers = library.getReaders();
+
+        for (int i = 0; i < readers.getSize(); i++) {
+            readersList.add(readers.getAmountNodo(i));
+        }
+
+        tableReader.setItems(readersList);
+        tableReader.refresh();
     }
 
 

@@ -151,23 +151,16 @@ public class Persistence {
     }
 
     public boolean deleteReader(String username) {
-        LinkedList<Reader> readers = getAllReaders();
-        boolean removed = false;
-
-        for (int i = 0; i < readers.getSize(); i++) {
-            Reader r = readers.getAmountNodo(i);
-            if (r.getUsername().equals(username)) {
-                readers.delete(r);
-                removed = true;
-                break;
-            }
+        if (!readers.containsKey(username)) {
+            return false;
         }
 
-        if (removed) {
-            saveReaders(readers);
-        }
+        // Elimina el lector del HashMap
+        readers.remove(username);  // Asumiendo que tu remove() es void
 
-        return removed;
+        // Guarda los cambios en el archivo
+        saveReaders(getAllReaders());
+        return true;
     }
 
 

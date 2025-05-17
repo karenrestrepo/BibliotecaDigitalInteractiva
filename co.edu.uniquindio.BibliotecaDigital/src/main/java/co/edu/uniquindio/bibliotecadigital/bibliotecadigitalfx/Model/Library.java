@@ -66,7 +66,14 @@ public class Library {
         return false;
     }
     public boolean deleteReader(String username) {
-        return persistence.deleteReader(username); // implementado en Persistence
+        if (!persistence.getReaders().containsKey(username)) {
+            return false;
+        }
+
+        // Elimina el lector
+        persistence.getReaders().remove(username);
+        persistence.saveReaders(persistence.getAllReaders());
+        return true;
     }
 
     public boolean updateReader(String username, String newName, String newPassword) {
