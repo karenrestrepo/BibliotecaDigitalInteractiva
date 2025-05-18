@@ -11,18 +11,43 @@ import java.io.File;
 import java.io.IOException;
 
 public class Library {
-    Persistence persistence;
     private static Library instance;
-
+    private Persistence persistence;
+    private LinkedList<Reader> readersList;
+    private LinkedList<Book> bookssList;
     private HashMap<String, Book> books = new HashMap<>();
-
-    LinkedList<Reader> readersList = new LinkedList<>();
-    LinkedList<Book> bookssList = new LinkedList<>();
     LinkedList<Administrator> administrators = new LinkedList<>();
     private HashMap<String, Rating> ratings = new HashMap<>();
     private Graph<String> readerConnections = new Graph<>();
+
+
     public Library() {
-        // Constructor sin excepciones
+        persistence = new Persistence();
+        readersList = new LinkedList<>();
+        bookssList = new LinkedList<>();
+        loadDataFromPersistence();
+    }
+
+    public static Library getInstance() {
+        if (instance == null) {
+            instance = new Library();
+        }
+        return instance;
+    }
+
+    private void loadDataFromPersistence() {
+        // Cargar lectores
+        loadReadersFromPersistence();
+        // Cargar libros (implementa esto de manera similar)
+    }
+
+    private void loadReadersFromPersistence() {
+        HashMap<String, Reader> readersMap = persistence.getReaders();
+        readersList.clear(); // Limpiar la lista antes de cargar
+        for (int i = 0; i < readersMap.size(); i++) {
+            Reader reader = readersMap.get(readersMap.getKey(i));
+            readersList.addEnd(reader);
+        }
     }
 
     private void initializePersistence() throws IOException {
@@ -42,17 +67,13 @@ public class Library {
         }
     }
 
-    public static synchronized Library getInstance() throws IOException {
-        if (instance == null) {
-            instance = new Library();
-        }
-        return instance;
-    }
 
     public Library(Persistence persistence) {
         this.persistence = persistence;
+        this.readersList = new LinkedList<>();
+        bookssList = new LinkedList<>();
+        loadDataFromPersistence();
     }
-
     public Book  createBook(String id, String title, String author, int year, String category){
         Book newbook = null;
         verifyBookDoesNotExist(id);
@@ -83,13 +104,15 @@ public class Library {
     public boolean registerReader(String name, String username, String password) {
         if (persistence.getReaders().get(username) == null) {
             Reader reader = new Reader(name, username, password);
-            persistence.saveReaderToFile(reader); // guardamos en el archivo
-            persistence.getReaders().put(username, reader); // guardamos en el HashMap
-            readersList.addEnd(reader); // agregamos a la lista en memoria
+            readersList.addEnd(reader);
+            persistence.getReaders().put(username, reader);
+            persistence.saveReaderToFile(reader);
             return true;
         }
         return false;
+
     }
+
     public boolean deleteReader(String username) {
         if (!persistence.getReaders().containsKey(username)) {
             return false;
@@ -129,25 +152,24 @@ public class Library {
         return readersList;
     }
 
-    public String loadDataFromFile(File file) {
-        if (persistence == null) {
-            try {
-                this.persistence = new Persistence(); // Inicializa persistence si es null
-            } catch (IOException e) {
-                return "Error inicializando Persistence: " + e.getMessage();
+    public String loadDataFromFile(File file) throws IOException {
+        String result = "";
+        if (file.getName().equals("lectores.txt")) {
+            // 1. Limpiar las estructuras de datos
+            persistence.getReaders().clear();
+            readersList.clear();
+
+            // 2. Cargar los datos desde el archivo
+            HashMap<String, Reader> tempReaders = persistence.loadReaders();
+            for (int i = 0; i < tempReaders.size(); i++) {
+                Reader reader = tempReaders.get(tempReaders.getKey(i));
+                persistence.getReaders().put(reader.getUsername(), reader);
+                readersList.addEnd(reader);
             }
+            result = "Datos cargados exitosamente desde: " + file.getName();
         }
-
-        try {
-            persistence.loadDataFromFile(file);
-            persistence.saveReaders(persistence.getAllReaders());
-            persistence.saveAllBooks();
-
-            refreshInternalData();
-            return "Datos cargados exitosamente desde: " + file.getName();
-        } catch (IOException e) {
-            return "Error al cargar datos: " + e.getMessage();
-        }
+        // ... (manejo de otros archivos)
+        return result;
     }
     private void refreshInternalData() throws IOException {
         // Limpiar estructuras existentes
@@ -224,6 +246,6 @@ public class Library {
 
 
     public LinkedList<Reader> getReaders() {
-        return persistence.getAllReaders();
+        return readersList;
     }
 }

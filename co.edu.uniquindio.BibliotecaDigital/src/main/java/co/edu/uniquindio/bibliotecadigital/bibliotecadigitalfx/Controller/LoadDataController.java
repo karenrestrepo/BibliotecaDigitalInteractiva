@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 
 public class LoadDataController {
     Library library = Library.getInstance();
+    private UserManagementController userManagementController;
 
     @FXML
     private ResourceBundle resources;
@@ -31,6 +32,10 @@ public class LoadDataController {
 
     public void setLibrary(Library library) {
         this.library = library;
+    }
+
+    public void setUserManagementController(UserManagementController controller) {
+        this.userManagementController = controller; // And this line
     }
 
     @FXML
@@ -55,6 +60,10 @@ public class LoadDataController {
 
                 // 3. Mostrar feedback al usuario
                 showAlert("Resultado", result);
+
+                if (userManagementController != null) {
+                    userManagementController.loadReadersTable();
+                }
 
                 // 4. DEBUG: Imprimir en consola
                 System.out.println("Archivo procesado: " + selectedFile.getName());

@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/BibliotecaDigitalInteractiva.iml" filepath="$PROJECT_DIR$/.idea/BibliotecaDigitalInteractiva.iml" />
-      <module fileurl="file://$PROJECT_DIR$/co.edu.uniquindio.BibliotecaDigital/BibliotecaDigitalfx.iml" filepath="$PROJECT_DIR$/co.edu.uniquindio.BibliotecaDigital/BibliotecaDigitalfx.iml" />
     </modules>
   </component>
 </project>

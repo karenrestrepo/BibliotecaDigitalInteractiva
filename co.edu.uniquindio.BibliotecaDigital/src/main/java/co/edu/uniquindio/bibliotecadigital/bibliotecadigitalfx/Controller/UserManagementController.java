@@ -174,7 +174,7 @@ public class UserManagementController {
         tableReader.refresh();
     }
 
-    private void loadReadersTable() {
+    void loadReadersTable() {
         ObservableList<Reader> readersList = FXCollections.observableArrayList();
         LinkedList<Reader> readers = library.getReaders();
 

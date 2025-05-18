@@ -6,10 +6,12 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.
 public class HashMap<K, V> {
     private static final int SIZE = 100;
     private MapNode<K, V>[] table;
+    private int size;
 
     @SuppressWarnings("unchecked")
     public HashMap() {
         table = new MapNode[SIZE];
+        size = 0;
     }
 
     private int hash(K key) {
@@ -31,6 +33,7 @@ public class HashMap<K, V> {
         MapNode<K, V> newNode = new MapNode<>(key, value);
         newNode.setNext(table[index]);
         table[index] = newNode;
+        size++;
     }
 
     public V get(K key) {
@@ -63,6 +66,7 @@ public class HashMap<K, V> {
                 } else {
                     previous.setNext(current.getNext());
                 }
+                size--;
                 return;
             }
             previous = current;
@@ -85,6 +89,7 @@ public class HashMap<K, V> {
 
     public void clear(){
         table = new MapNode[SIZE];
+        size = 0;
     }
 
 
@@ -99,6 +104,31 @@ public class HashMap<K, V> {
         }
 
         return keys;
+    }
+
+    public int size() {
+        return size;
+    }
+
+    // Method to get the key at a specific index
+    public K getKey(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+
+        int currentIndex = 0;
+        for (int i = 0; i < table.length; i++) {
+            MapNode<K, V> current = table[i];
+            while (current != null) {
+                if (currentIndex == index) {
+                    return current.getKey();
+                }
+                currentIndex++;
+                current = current.getNext();
+            }
+        }
+
+        return null; // Should not reach here if index is valid
     }
 
 

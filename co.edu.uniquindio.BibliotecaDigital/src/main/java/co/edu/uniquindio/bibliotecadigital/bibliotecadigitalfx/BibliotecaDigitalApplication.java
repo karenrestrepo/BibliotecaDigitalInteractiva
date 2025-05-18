@@ -22,11 +22,7 @@ public class BibliotecaDigitalApplication extends Application {
     private static Persistence persistence; // contenedor de datos
 
     static {
-        try {
-            persistence = new Persistence();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        persistence = new Persistence();
     }
 
     @Override

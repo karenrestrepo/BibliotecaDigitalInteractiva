@@ -28,30 +28,46 @@ public class Persistence {
     private HashMap<String, Book> books;
     Library library;
 
-    public Persistence() throws IOException {
-        readers = new HashMap<>();
-        administrators = new HashMap<>();
-        books = new HashMap<>();
-        loadReadersFromFile();
-        loadAdmin(); // always ensures admin exists
-        loadBooksFromFile();
+
+
+    public Persistence() {
+        this.readers = loadReaders();
+        //this.books = loadBooksFromFile();
+        this.administrators = loadAdmin();
     }
 
-    private void loadAdmin() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(ADMINS_FILE))) {
+    public HashMap<String, Reader> loadReaders() {
+        HashMap<String, Reader> readers = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(READERS_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 3) {
-                    String name = parts[0];
-                    String username = parts[1];
-                    String password = parts[2];
-                    administrators.put(username, new Administrator(name, username, password));
+                    Reader user = new Reader(parts[0], parts[1], parts[2]);
+                    readers.put(user.getUsername(), user);
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error loading administrators: " + e.getMessage());
+            e.printStackTrace();
         }
+        return readers;
+    }
+
+    private HashMap<String, Administrator> loadAdmin() {
+        HashMap<String, Administrator> admins = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(ADMINS_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 3) {
+                    Administrator admin = new Administrator(parts[0], parts[1], parts[2]);
+                    admins.put(admin.getUsername(), admin); // Aquí es donde ocurre el NullPointerException si administrators no está inicializado
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return admins;
     }
 
     private void loadReadersFromFile() throws IOException {
@@ -361,6 +377,8 @@ public class Persistence {
     public HashMap<String, Reader> getReaders () {
         return readers;
     }
+
+
 
 
 }
