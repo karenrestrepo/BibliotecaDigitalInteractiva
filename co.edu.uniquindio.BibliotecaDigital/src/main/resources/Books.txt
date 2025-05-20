@@ -1,5 +1,0 @@
-B001,El jardín secreto,Frances Hodgson Burnett,1911,Infantil,AVAILABLE,0.0,0,0
-B002,Cien años de soledad,Gabriel García Márquez,1967,Realismo mágico,AVAILABLE,0.0,0,0
-B003,1984,George Orwell,1949,Distopía,AVAILABLE,0.0,0,0
-B004,Orgullo y prejuicio,Jane Austen,1813,Romance,AVAILABLE,0.0,0,0
-B005,Sapiens: De animales a dioses,Yuval Noah Harari,2011,Historia,AVAILABLE,0.0,0,0
