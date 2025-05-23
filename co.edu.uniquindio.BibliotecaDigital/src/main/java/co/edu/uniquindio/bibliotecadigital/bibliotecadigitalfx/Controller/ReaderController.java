@@ -97,6 +97,8 @@ public class ReaderController {
         }
     }
 
+
+
     private Library getLibraryFromPersistence() throws IOException {
         // Método temporal mientras no exista Persistence.getLibrary()
         return LibraryUtil.initializeData(); // Asume que Library tiene un singleton o acceso global similar

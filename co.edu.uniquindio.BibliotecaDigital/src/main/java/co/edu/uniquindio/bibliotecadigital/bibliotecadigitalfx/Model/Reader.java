@@ -2,6 +2,8 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinitySystem;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.PriorityQueue;
 
@@ -41,21 +43,36 @@ public class Reader extends Person {
 
     // =============== MÉTODOS DE BÚSQUEDA DE LIBROS ===============
 
+    // Reemplazar el método getBookByTittle en Reader.java
+
     /**
-     * Busca un libro por título usando el ABB de la biblioteca
-     * Explicación: Utilizamos búsqueda binaria para eficiencia O(log n)
+     * Busca un libro por título en la biblioteca
+     * @param title título del libro a buscar
+     * @param library biblioteca donde buscar
+     * @return el libro encontrado o null si no existe
      */
     public static Book getBookByTitle(String title, Library library) {
+        if (title == null || title.trim().isEmpty() || library == null) {
+            return null; // Retorna null en lugar de lanzar excepción
+        }
+
         LinkedList<Book> allBooks = library.getBookssList();
 
-        // Búsqueda lineal por ahora, pero podrías optimizar con ABB
+        // Búsqueda lineal por el título (case-insensitive)
         for (int i = 0; i < allBooks.getSize(); i++) {
             Book book = allBooks.getAmountNodo(i);
-            if (book.getTitle().equalsIgnoreCase(title.trim())) {
+            if (book != null && book.getTitle() != null &&
+                    book.getTitle().equalsIgnoreCase(title.trim())) {
                 return book;
             }
         }
-        throw new RuntimeException("No se encontró el libro con título: " + title);
+
+        return null; // No se encontró el libro
+    }
+
+    // También agregar método de instancia para mayor conveniencia
+    public Book searchBookByTitle(String title) {
+        return getBookByTitle(title, this.library);
     }
 
     /**
@@ -133,6 +150,75 @@ public class Reader extends Person {
 
         book.setStatus(BookStatus.AVAILABLE);
         // Aquí podrías notificar a la cola de espera
+        return true;
+    }
+
+    // Agregar estos métodos a la clase Reader.java
+
+    /**
+     * Obtiene recomendaciones de libros usando el sistema de ML implementado
+     */
+    public LinkedList<Book> getRecommendations() {
+        if (library == null) {
+            return new LinkedList<>(); // Retorna lista vacía si no hay biblioteca
+        }
+
+        // Usar el sistema de recomendaciones híbrido
+        BookRecommendationSystem recommendationSystem = new BookRecommendationSystem(library);
+        LinkedList<BookRecommendationSystem.BookRecommendation> hybridRecs =
+                recommendationSystem.getHybridRecommendations(this, 10);
+
+        // Convertir a lista simple de libros
+        LinkedList<Book> recommendations = new LinkedList<>();
+        for (BookRecommendationSystem.BookRecommendation rec : hybridRecs) {
+            recommendations.add(rec.getBook());
+        }
+
+        return recommendations;
+    }
+
+    /**
+     * Obtiene sugerencias de amigos usando el sistema de afinidad
+     */
+    public LinkedList<Reader> getSuggestions(LibrarySystem librarySystem) {
+        if (library == null) {
+            return new LinkedList<>();
+        }
+
+        // Usar el sistema de afinidad para encontrar lectores similares
+        AffinitySystem affinitySystem = new AffinitySystem(library);
+        return affinitySystem.getSuggestedFriends(this);
+    }
+
+    /**
+     * Método corregido para prestar libros (era lendBook, ahora loanBook)
+     */
+    public boolean loanBook(Book book) {
+        return requestLoan(book); // Usa el método existente
+    }
+
+    /**
+     * Método para enviar mensajes a otros lectores
+     */
+    public boolean sendMessage(Reader recipient, String message) {
+        if (recipient == null || message == null || message.trim().isEmpty()) {
+            return false;
+        }
+
+        // Verificar que están conectados en el grafo de afinidad
+        if (library != null) {
+            AffinitySystem affinitySystem = new AffinitySystem(library);
+            LinkedList<Reader> path = affinitySystem.getShortestPath(this, recipient);
+
+            if (path.getSize() == 0) {
+                throw new RuntimeException("No estás conectado con este lector");
+            }
+        }
+
+        // Crear mensaje
+        String formattedMessage = "De " + this.getUsername() + ": " + message;
+        recipient.receiveMessage(formattedMessage);
+
         return true;
     }
 
@@ -265,29 +351,7 @@ public class Reader extends Person {
         AffinitySystem affinitySystem = new AffinitySystem(library);
         return affinitySystem.getSuggestedFriends(this);
     }
-
-    /**
-     * Envía un mensaje a otro lector conectado
-     */
-    public boolean sendMessage(Reader recipient, String message) {
-        if (recipient == null || message == null || message.trim().isEmpty()) {
-            return false;
-        }
-
-        // Verificar que están conectados en el grafo de afinidad
-        AffinitySystem affinitySystem = new AffinitySystem(library);
-        LinkedList<Reader> path = affinitySystem.getShortestPath(this, recipient);
-
-        if (path.getSize() == 0) {
-            throw new RuntimeException("No estás conectado con este lector");
-        }
-
-        // Crear mensaje
-        String formattedMessage = "De " + this.getUsername() + ": " + message;
-        recipient.receiveMessage(formattedMessage);
-
-        return true;
-    }
+    
 
     /**
      * Recibe un mensaje
@@ -295,6 +359,8 @@ public class Reader extends Person {
     public void receiveMessage(String message) {
         messages.add(message);
     }
+
+
 
     // =============== GETTERS Y SETTERS ===============
 
