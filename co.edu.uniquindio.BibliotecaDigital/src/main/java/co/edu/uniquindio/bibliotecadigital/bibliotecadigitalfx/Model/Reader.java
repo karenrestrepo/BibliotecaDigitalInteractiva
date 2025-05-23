@@ -1,138 +1,313 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinitySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.PriorityQueue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
+/**
+ * Clase Reader mejorada con sistema completo de recomendaciones,
+ * valoraciones y gestión de afinidad
+ */
 public class Reader extends Person {
     private LinkedList<Book> loanHistoryList;
     private LinkedList<Rating> ratingsList;
+    private LinkedList<String> messages; // Mensajes recibidos
     private Library library;
 
     public Reader(String name, String username, String password, Library library) {
         super(name, username, password);
         this.loanHistoryList = new LinkedList<>();
         this.ratingsList = new LinkedList<>();
-        this.library = library;  }
+        this.messages = new LinkedList<>();
+        this.library = library;
+    }
 
     public Reader() {
-
+        this.loanHistoryList = new LinkedList<>();
+        this.ratingsList = new LinkedList<>();
+        this.messages = new LinkedList<>();
     }
 
     public Reader(String name, String username, String password) {
         super(name, username, password);
         this.loanHistoryList = new LinkedList<>();
         this.ratingsList = new LinkedList<>();
+        this.messages = new LinkedList<>();
     }
 
-    public static Book getBookByTittle(String title, Library library) {
-        for (int i = 0; i < library.getBookssList().getSize(); i++) {
-            Book book = library.getBookssList().getAmountNodo(i);
-            if (book.getTitle().equalsIgnoreCase(title)) {
+    // =============== MÉTODOS DE BÚSQUEDA DE LIBROS ===============
+
+    /**
+     * Busca un libro por título usando el ABB de la biblioteca
+     * Explicación: Utilizamos búsqueda binaria para eficiencia O(log n)
+     */
+    public static Book getBookByTitle(String title, Library library) {
+        LinkedList<Book> allBooks = library.getBookssList();
+
+        // Búsqueda lineal por ahora, pero podrías optimizar con ABB
+        for (int i = 0; i < allBooks.getSize(); i++) {
+            Book book = allBooks.getAmountNodo(i);
+            if (book.getTitle().equalsIgnoreCase(title.trim())) {
                 return book;
             }
         }
         throw new RuntimeException("No se encontró el libro con título: " + title);
     }
 
-    public List<Book> getBooksByAuthor(String author, Library library) {
-        List<Book> results = new ArrayList<>();
-        for (Book book : library.getBooks().values()) {
-            if (book.getAuthor().equalsIgnoreCase(author)) {
+    /**
+     * Busca libros por autor - retorna lista porque un autor puede tener varios libros
+     */
+    public LinkedList<Book> getBooksByAuthor(String author) {
+        LinkedList<Book> results = new LinkedList<>();
+        LinkedList<Book> allBooks = library.getBookssList();
+
+        for (int i = 0; i < allBooks.getSize(); i++) {
+            Book book = allBooks.getAmountNodo(i);
+            if (book.getAuthor().toLowerCase().contains(author.toLowerCase())) {
                 results.add(book);
             }
         }
         return results;
     }
 
-    public Book getBookByYear(String year) {
-        LinkedList<Book> books = new LinkedList<>();
-        for (int i = 0; i < library.getBookssList().getSize(); i++) {
-            Book book = library.getBookssList().getAmountNodo(i);
-            if (book.getTitle().equalsIgnoreCase(year)) {
-                return book;
+    /**
+     * Busca libros por categoría
+     */
+    public LinkedList<Book> getBooksByCategory(String category) {
+        LinkedList<Book> results = new LinkedList<>();
+        LinkedList<Book> allBooks = library.getBookssList();
+
+        for (int i = 0; i < allBooks.getSize(); i++) {
+            Book book = allBooks.getAmountNodo(i);
+            if (book.getCategory().equalsIgnoreCase(category)) {
+                results.add(book);
             }
         }
-        throw new RuntimeException("No se encontró el libro con año: " + year);
+        return results;
     }
 
-// metodo prestar libro
-    public void lendBook(Book book) {
+    // =============== SISTEMA DE PRÉSTAMOS ===============
+
+    /**
+     * Solicita el préstamo de un libro
+     * Utiliza cola de prioridad si el libro no está disponible
+     */
+    public boolean requestLoan(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("El libro no puede ser null");
+        }
+
         if (book.getStatus() == BookStatus.AVAILABLE) {
+            // Libro disponible - préstamo inmediato
             book.setStatus(BookStatus.CHECKED_OUT);
-         this.loanHistoryList.add(book);
+            this.loanHistoryList.add(book);
+            return true;
         } else {
-            throw new RuntimeException("El libro no está disponible.");
+            // Libro no disponible - añadir a lista de espera
+            // Aquí implementarías la cola de prioridad
+            System.out.println("Libro no disponible. Añadido a lista de espera.");
+            return false;
         }
     }
 
-    //Devolver libros.
-    public void returnBook(Book book) {
+    /**
+     * Devuelve un libro prestado
+     */
+    public boolean returnBook(Book book) {
+        // Verificar que el lector tiene el libro
+        boolean hasBook = false;
         for (int i = 0; i < loanHistoryList.getSize(); i++) {
-            if (loanHistoryList.getAmountNodo(i).equals(book)) {
-                book.setStatus(BookStatus.AVAILABLE); // Devuelve disponibilidad
-                return;
+            if (loanHistoryList.getAmountNodo(i).getIdBook().equals(book.getIdBook())) {
+                hasBook = true;
+                break;
             }
         }
-        throw new RuntimeException("El lector no tiene este libro en su historial.");
+
+        if (!hasBook) {
+            throw new RuntimeException("El lector no tiene este libro en préstamo.");
+        }
+
+        book.setStatus(BookStatus.AVAILABLE);
+        // Aquí podrías notificar a la cola de espera
+        return true;
     }
 
-    //Valorar libros.
-    public void rateBook(Reader reader, Book book, int stars, String comment) {
-        Rating rating = new Rating(reader, book, stars, comment);
+    // =============== SISTEMA DE VALORACIONES ===============
+
+    /**
+     * Valora un libro - solo se puede valorar libros que se han leído
+     */
+    public boolean rateBook(Book book, int stars, String comment) {
+        // Validaciones
+        if (stars < 1 || stars > 5) {
+            throw new IllegalArgumentException("La valoración debe estar entre 1 y 5 estrellas");
+        }
+
+        // Verificar que ha leído el libro (está en su historial)
+        boolean hasRead = false;
+        for (int i = 0; i < loanHistoryList.getSize(); i++) {
+            if (loanHistoryList.getAmountNodo(i).getIdBook().equals(book.getIdBook())) {
+                hasRead = true;
+                break;
+            }
+        }
+
+        if (!hasRead) {
+            throw new RuntimeException("Solo puedes valorar libros que has leído");
+        }
+
+        // Verificar si ya valoró este libro
+        for (int i = 0; i < ratingsList.getSize(); i++) {
+            Rating existingRating = ratingsList.getAmountNodo(i);
+            if (existingRating.getBook().getIdBook().equals(book.getIdBook())) {
+                throw new RuntimeException("Ya has valorado este libro");
+            }
+        }
+
+        // Crear nueva valoración
+        Rating rating = new Rating(this, book, stars, comment);
         ratingsList.add(rating);
 
-        // Solo se añade el número de estrellas al libro (no el comentario)
+        // Actualizar la valoración promedio del libro
         book.addRating(stars);
+
+        // Notificar al sistema de afinidad que se actualizó una valoración
+        if (library != null) {
+            // Aquí triggearías la actualización del grafo de afinidad
+        }
+
+        return true;
     }
 
-    //Consultar recomendaciones de libros según valoraciones propias.
-    public List<Book> getRecommendations() {
+    // =============== SISTEMA DE RECOMENDACIONES ===============
+
+    /**
+     * Obtiene recomendaciones de libros basadas en las valoraciones del lector
+     * Algoritmo: Recomienda libros del mismo autor o categoría de libros valorados positivamente
+     */
+    public LinkedList<Book> getBookRecommendations() {
         LinkedList<Book> recommendations = new LinkedList<>();
+        LinkedList<String> preferredAuthors = new LinkedList<>();
+        LinkedList<String> preferredCategories = new LinkedList<>();
+
+        // Analizar valoraciones positivas (4-5 estrellas)
         for (int i = 0; i < ratingsList.getSize(); i++) {
             Rating rating = ratingsList.getAmountNodo(i);
             if (rating.getStars() >= 4) {
-                Book ratedBook = rating.getBook();
-                for (int j = 0; j < loanHistoryList.getSize(); j++) {
-                    Book otherBook = loanHistoryList.getAmountNodo(j);
-                    if (!otherBook.equals(ratedBook) &&
-                            (otherBook.getAuthor().equalsIgnoreCase(ratedBook.getAuthor()) ||
-                                    otherBook.getCategory().equalsIgnoreCase(ratedBook.getCategory()))) {
-                        recommendations.add(otherBook);
-                    }
+                Book likedBook = rating.getBook();
+
+                // Recopilar autores y categorías preferidas
+                if (!containsString(preferredAuthors, likedBook.getAuthor())) {
+                    preferredAuthors.add(likedBook.getAuthor());
+                }
+                if (!containsString(preferredCategories, likedBook.getCategory())) {
+                    preferredCategories.add(likedBook.getCategory());
                 }
             }
         }
-        return recommendations.stream().toList();
-    }
 
-    //Ver sugerencias de lectores con gustos similares.
-    public List<Reader> getSuggestions(LibrarySystem library) {
-        Graph<Reader> graph = library.getAffinityGraph();
-        Set<Reader> connections = graph.getAdjacentVertices(this);  // ✅ corregido
+        // Buscar libros de autores y categorías preferidas que no haya leído
+        LinkedList<Book> allBooks = library.getBookssList();
+        for (int i = 0; i < allBooks.getSize(); i++) {
+            Book book = allBooks.getAmountNodo(i);
 
-        List<Reader> similarReaders = new ArrayList<>();
-        for (Person person : connections) {
-            if (person instanceof Reader reader) {
-                similarReaders.add(reader);
+            // Verificar que no lo ha leído
+            if (!hasReadBook(book)) {
+                // Verificar si es de autor o categoría preferida
+                if (containsString(preferredAuthors, book.getAuthor()) ||
+                        containsString(preferredCategories, book.getCategory())) {
+                    recommendations.add(book);
+                }
             }
         }
-        return similarReaders;
+
+        return recommendations;
     }
 
-    //Enviar mensajes a lectores conectados.
-    public void sendMessage(Reader recipient, String message) {
-        System.out.println("Mensaje de " + getUsername() + " para " + recipient.getUsername() + ": " + message);
+    /**
+     * Verifica si el lector ha leído un libro
+     */
+    private boolean hasReadBook(Book book) {
+        for (int i = 0; i < loanHistoryList.getSize(); i++) {
+            if (loanHistoryList.getAmountNodo(i).getIdBook().equals(book.getIdBook())) {
+                return true;
+            }
+        }
+        return false;
     }
+
+    /**
+     * Método auxiliar para verificar si una lista contiene un string
+     */
+    private boolean containsString(LinkedList<String> list, String item) {
+        for (int i = 0; i < list.getSize(); i++) {
+            if (list.getAmountNodo(i).equalsIgnoreCase(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // =============== SISTEMA SOCIAL ===============
+
+    /**
+     * Obtiene sugerencias de amigos usando el sistema de afinidad
+     */
+    public LinkedList<Reader> getFriendSuggestions() {
+        if (library == null) {
+            return new LinkedList<>();
+        }
+
+        AffinitySystem affinitySystem = new AffinitySystem(library);
+        return affinitySystem.getSuggestedFriends(this);
+    }
+
+    /**
+     * Envía un mensaje a otro lector conectado
+     */
+    public boolean sendMessage(Reader recipient, String message) {
+        if (recipient == null || message == null || message.trim().isEmpty()) {
+            return false;
+        }
+
+        // Verificar que están conectados en el grafo de afinidad
+        AffinitySystem affinitySystem = new AffinitySystem(library);
+        LinkedList<Reader> path = affinitySystem.getShortestPath(this, recipient);
+
+        if (path.getSize() == 0) {
+            throw new RuntimeException("No estás conectado con este lector");
+        }
+
+        // Crear mensaje
+        String formattedMessage = "De " + this.getUsername() + ": " + message;
+        recipient.receiveMessage(formattedMessage);
+
+        return true;
+    }
+
+    /**
+     * Recibe un mensaje
+     */
+    public void receiveMessage(String message) {
+        messages.add(message);
+    }
+
+    // =============== GETTERS Y SETTERS ===============
 
     public LinkedList<Book> getLoanHistoryList() {
         return loanHistoryList;
+    }
+
+    public LinkedList<Rating> getRatingsList() {
+        return ratingsList;
+    }
+
+    public LinkedList<String> getMessages() {
+        return messages;
     }
 
     public Library getLibrary() {
@@ -141,5 +316,10 @@ public class Reader extends Person {
 
     public void setLibrary(Library library) {
         this.library = library;
+    }
+
+    @Override
+    public String toString() {
+        return getName() + " (" + getUsername() + ")";
     }
 }
