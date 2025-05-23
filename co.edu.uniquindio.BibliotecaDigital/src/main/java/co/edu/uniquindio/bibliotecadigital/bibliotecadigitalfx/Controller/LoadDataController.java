@@ -14,9 +14,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class LoadDataController {
-    Library library = Library.getInstance();
-    private UserManagementController userManagementController;
-
     @FXML
     private ResourceBundle resources;
 
@@ -26,54 +23,94 @@ public class LoadDataController {
     @FXML
     private Button btnLoadData;
 
-    public LoadDataController() throws IOException {
+    // Interfaz funcional para notificar actualizaciones
+    public interface DataLoadListener {
+        void onDataLoaded();
     }
 
+    private DataLoadListener dataLoadListener;
 
-    public void setLibrary(Library library) {
-        this.library = library;
-    }
-
-    public void setUserManagementController(UserManagementController controller) {
-        this.userManagementController = controller; // And this line
+    public void setDataLoadListener(DataLoadListener listener) {
+        this.dataLoadListener = listener;
     }
 
     @FXML
     void onLoadData(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Seleccionar archivo de datos");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos TXT", "*.txt"));
-
+        FileChooser fileChooser = createFileChooser();
         File selectedFile = fileChooser.showOpenDialog(btnLoadData.getScene().getWindow());
 
         if (selectedFile != null) {
-            try {
-                // 1. Verificar que el archivo sea válido
-                if (!selectedFile.exists() || !selectedFile.canRead()) {
-                    showAlert("Error", "No se puede leer el archivo seleccionado");
-                    return;
-                }
-
-                // 2. Procesar el archivo
-                String result = library.loadDataFromFile(selectedFile);
-
-                // 3. Mostrar feedback al usuario
-                showAlert("Resultado", result);
-
-                if (userManagementController != null) {
-                    userManagementController.loadReadersTable();
-                }
-
-                // 4. DEBUG: Imprimir en consola
-                System.out.println("Archivo procesado: " + selectedFile.getName());
-                System.out.println("Resultado: " + result);
-
-            } catch (Exception e) {
-                showAlert("Error", "Ocurrió un error: " + e.getMessage());
-                e.printStackTrace();
-            }
+            processSelectedFile(selectedFile);
         }
+    }
+
+    private FileChooser createFileChooser() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Seleccionar archivo de datos");
+
+        // Agregar filtros para diferentes tipos de archivos
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Archivos TXT", "*.txt"),
+                new FileChooser.ExtensionFilter("Todos los archivos", "*.*")
+        );
+
+        return fileChooser;
+    }
+
+    private void processSelectedFile(File selectedFile) {
+        try {
+            // Validaciones del archivo
+            if (!isValidFile(selectedFile)) {
+                return;
+            }
+
+            // Procesar el archivo
+            Library library = Library.getInstance();
+            String result = library.loadDataFromFile(selectedFile);
+
+            // Mostrar resultado
+            showAlert("Resultado de la carga", result);
+
+            // Notificar a los listeners que se han cargado datos
+            if (dataLoadListener != null) {
+                dataLoadListener.onDataLoaded();
+            }
+
+            // Log para debugging
+            System.out.println("Archivo procesado exitosamente: " + selectedFile.getName());
+            System.out.println("Resultado: " + result);
+
+        } catch (Exception e) {
+            showAlert("Error", "Ocurrió un error al procesar el archivo: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private boolean isValidFile(File file) {
+        if (!file.exists()) {
+            showAlert("Error", "El archivo seleccionado no existe.");
+            return false;
+        }
+
+        if (!file.canRead()) {
+            showAlert("Error", "No se puede leer el archivo seleccionado. Verifique los permisos.");
+            return false;
+        }
+
+        if (file.length() == 0) {
+            showAlert("Advertencia", "El archivo seleccionado está vacío.");
+            return false;
+        }
+
+        // Verificar que sea un archivo de texto
+        String fileName = file.getName().toLowerCase();
+        if (!fileName.endsWith(".txt")) {
+            boolean proceed = showConfirmation("Archivo no reconocido",
+                    "El archivo no tiene extensión .txt. ¿Desea continuar?");
+            return proceed;
+        }
+
+        return true;
     }
 
     private void showAlert(String title, String message) {
@@ -84,9 +121,22 @@ public class LoadDataController {
         alert.showAndWait();
     }
 
+    private boolean showConfirmation(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        return alert.showAndWait()
+                .filter(response -> response == javafx.scene.control.ButtonType.OK)
+                .isPresent();
+    }
+
     @FXML
     void initialize() {
-
+        System.out.println("LoadDataController inicializado correctamente");
+        // Registrar este controlador para comunicación con otros controladores
+        ControllerRegistry.getInstance().registerController("LoadDataController", this);
     }
 
 }

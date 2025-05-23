@@ -7,10 +7,10 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 public class LibrarySystem {
-    private Persistence persistence;
+    private Library library;
 
-    public LibrarySystem(Persistence persistence) {
-        this.persistence = persistence;
+    public LibrarySystem(Library library) {
+        this.library = library;
     }
 
     public LibrarySystem() {
@@ -19,14 +19,14 @@ public class LibrarySystem {
     public Graph<Reader> getAffinityGraph() {
         Graph<Reader> affinityGraph = new Graph<>();
 
-        for (Reader person : persistence.getAllReaders()) {
+        for (Reader person : library.getReaders()) {
             affinityGraph.addVertex(person);
         }
 
-        for (int i = 0; i < persistence.getAllReaders().getSize(); i++) {
-            for (int j = i + 1; j < persistence.getAllReaders().getSize(); j++) {
-                Reader p1 = persistence.getAllReaders().getAmountNodo(i);
-                Reader p2 = persistence.getAllReaders().getAmountNodo(j);
+        for (int i = 0; i < library.getReaders().getSize(); i++) {
+            for (int j = i + 1; j < library.getReaders().getSize(); j++) {
+                Reader p1 = library.getReaders().getAmountNodo(i);
+                Reader p2 = library.getReaders().getAmountNodo(j);
 
                 if (haveAffinity(p1, p2)) {
                     affinityGraph.addEdge(p1, p2);

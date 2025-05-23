@@ -17,7 +17,6 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class BibliotecaDigitalApplication extends Application {
-
     private static Stage primaryStage;
     private static Persistence persistence; // contenedor de datos
 
@@ -34,8 +33,7 @@ public class BibliotecaDigitalApplication extends Application {
     public static void mostrarLogin() throws IOException {
         FXMLLoader loader = new FXMLLoader(BibliotecaDigitalApplication.class.getResource("/co/edu/uniquindio/bibliotecadigital/bibliotecadigitalfx/Login.fxml"));
         Parent root = loader.load();
-        LoginController controller = loader.getController();
-        controller.setPersistence(persistence);
+
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Login - Biblioteca Digital");
@@ -43,22 +41,28 @@ public class BibliotecaDigitalApplication extends Application {
     }
 
     public static void mostrarAdministrador() throws IOException {
-        FXMLLoader loader = new FXMLLoader(BibliotecaDigitalApplication.class.getResource("AdministradorView.fxml"));
+        FXMLLoader loader = new FXMLLoader(BibliotecaDigitalApplication.class.getResource("AdministratorView.fxml"));
         Parent root = loader.load();
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Administrador - Biblioteca Digital");
+        primaryStage.show(); // Agregué esta línea que faltaba
     }
 
     public static void mostrarLector(Reader reader) throws IOException {
         FXMLLoader loader = new FXMLLoader(BibliotecaDigitalApplication.class.getResource("ReaderView.fxml"));
         Parent root = loader.load();
         ReaderController controller = loader.getController();
-        controller.setLector(reader);
-        controller.setPersistence(persistence);
+
+        if (controller != null) {
+            controller.setLector(reader);
+            controller.setPersistence(persistence);
+        }
+
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Lector - Biblioteca Digital");
+        primaryStage.show(); // Agregué esta línea que faltaba
     }
 
     public static void main(String[] args) {

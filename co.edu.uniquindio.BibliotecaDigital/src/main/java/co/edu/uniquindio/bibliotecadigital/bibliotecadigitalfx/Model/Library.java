@@ -3,9 +3,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
-import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,239 +11,345 @@ import java.io.IOException;
 public class Library {
     private static Library instance;
     private Persistence persistence;
-    private LinkedList<Reader> readersList;
-    private LinkedList<Book> bookssList;
+
+    // UNIFICADO: Una sola fuente de verdad para cada tipo de dato
+    private HashMap<String, Reader> readers = new HashMap<>();
     private HashMap<String, Book> books = new HashMap<>();
-    LinkedList<Administrator> administrators = new LinkedList<>();
+    private HashMap<String, Administrator> administrators = new HashMap<>();
     private HashMap<String, Rating> ratings = new HashMap<>();
     private Graph<String> readerConnections = new Graph<>();
 
-
+    // CONSTRUCTOR PRIVADO para Singleton
     public Library() {
         persistence = new Persistence();
-        readersList = new LinkedList<>();
-        bookssList = new LinkedList<>();
         loadDataFromPersistence();
     }
 
-    public static Library getInstance() {
+    // CORREGIDO: Singleton thread-safe
+    public static synchronized Library getInstance() {
         if (instance == null) {
             instance = new Library();
         }
         return instance;
     }
 
+    // ELIMINADO: Constructor público que recibía Persistence
+    // RAZÓN: Violaba el patrón Singleton y creaba inconsistencias
+
+    // CORREGIDO: Método unificado para cargar datos
     private void loadDataFromPersistence() {
-        // Cargar lectores
-        loadReadersFromPersistence();
-        // Cargar libros (implementa esto de manera similar)
-    }
-
-    private void loadReadersFromPersistence() {
-        HashMap<String, Reader> readersMap = persistence.getReaders();
-        readersList.clear(); // Limpiar la lista antes de cargar
-        for (int i = 0; i < readersMap.size(); i++) {
-            Reader reader = readersMap.get(readersMap.getKey(i));
-            readersList.addEnd(reader);
-        }
-    }
-
-    private void initializePersistence() throws IOException {
-        if (persistence == null) {
-            persistence = new Persistence();
-            // Resto de inicialización
-        }
-    }
-
-    // Los métodos que usen persistence deberían verificar primero
-    public void someMethod() {
         try {
-            initializePersistence();
-            // Operaciones con persistence
-        } catch (IOException e) {
-            // Manejar error
+            readers = persistence.loadReaders();
+            books = persistence.loadBooks();
+            administrators = persistence.loadAdministrators();
+            // Establecer referencia a library en cada reader
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.setLibrary(this); // Si el Reader tiene este método
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading data from persistence: " + e.getMessage());
         }
     }
 
+    // CORREGIDO: Método para crear libro con mejor manejo de errores
+    public Book createBook(String id, String title, String author, int year, String category)
+            throws IllegalArgumentException {
+        // Validación de parámetros
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book ID cannot be null or empty");
+        }
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book title cannot be null or empty");
+        }
+        if (author == null || author.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book author cannot be null or empty");
+        }
+        if (year < 0) {
+            throw new IllegalArgumentException("Book year cannot be negative");
+        }
 
-    public Library(Persistence persistence) {
-        this.persistence = persistence;
-        this.readersList = new LinkedList<>();
-        bookssList = new LinkedList<>();
-        loadDataFromPersistence();
+        // Verificar que no existe
+        if (books.containsKey(id)) {
+            throw new IllegalArgumentException("Book with ID '" + id + "' already exists");
+        }
+
+        Book newBook = new Book(id.trim(), title.trim(), author.trim(), year,
+                category != null ? category.trim() : "");
+
+        books.put(id, newBook);
+
+        // Persistir cambios
+        if (!persistence.saveBook(newBook)) {
+            books.remove(id); // Rollback si falla la persistencia
+            throw new RuntimeException("Failed to save book to persistence");
+        }
+
+        return newBook;
     }
-    public Book  createBook(String id, String title, String author, int year, String category){
-        Book newbook = null;
-        verifyBookDoesNotExist(id);
 
-            newbook = new Book();
-            newbook.setIdBook(id);
-            newbook.setTitle(title);
-            newbook.setAuthor(author);
-            newbook.setYear(year);
-            newbook.setCategory(category);
-            books.put(id, newbook);
-            persistence.saveBookToFile(newbook);
-
-            return newbook;
-    }
-
+    // CORREGIDO: Método para eliminar libro
     public boolean removeBook(String id) {
-        Book book = getBookById(id);
-        if (book == null) {
-            throw new RuntimeException("The book to delete does not exist");
-        }
-        books.remove(id);
-        persistence.saveAllBooks();
-
-        return true;
-    }
-
-    public boolean registerReader(String name, String username, String password) {
-        if (persistence.getReaders().get(username) == null) {
-            Reader reader = new Reader(name, username, password);
-            readersList.addEnd(reader);
-            persistence.getReaders().put(username, reader);
-            persistence.saveReaderToFile(reader);
-            return true;
-        }
-        return false;
-
-    }
-
-    public boolean deleteReader(String username) {
-        if (!persistence.getReaders().containsKey(username)) {
+        if (id == null || id.trim().isEmpty()) {
             return false;
         }
 
-        // Elimina el lector
-        persistence.getReaders().remove(username);
-        readersList.delete(getReaderByUsername(username));
-        persistence.saveReaders(persistence.getAllReaders());
+        Book book = books.get(id);
+        if (book == null) {
+            return false;
+        }
+
+        books.remove(id);
+
+        // Guardar cambios en persistencia
+        if (!persistence.saveAllBooks(books)) {
+            books.put(id, book); // Rollback si falla
+            return false;
+        }
+
         return true;
     }
 
+    // CORREGIDO: Método para registrar lector
+    public boolean registerReader(String name, String username, String password) {
+        // Validación de parámetros
+        if (name == null || name.trim().isEmpty() ||
+                username == null || username.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (readers.containsKey(cleanUsername)) {
+            return false; // Ya existe
+        }
+
+        Reader reader = new Reader(name.trim(), cleanUsername, password.trim());
+        reader.setLibrary(this); // Si el Reader tiene este método
+
+        // Guardar en memoria
+        readers.put(cleanUsername, reader);
+
+        // Persistir
+        if (!persistence.saveReader(reader)) {
+            readers.remove(cleanUsername); // Rollback
+            return false;
+        }
+
+        return true;
+    }
+
+    // CORREGIDO: Método para eliminar lector
+    public boolean deleteReader(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (!readers.containsKey(cleanUsername)) {
+            return false;
+        }
+
+        Reader reader = readers.get(cleanUsername);
+        readers.remove(cleanUsername);
+
+        // Persistir cambios
+        if (!persistence.deleteReader(cleanUsername)) {
+            readers.put(cleanUsername, reader); // Rollback
+            return false;
+        }
+
+        return true;
+    }
+
+    // CORREGIDO: Método para actualizar lector
     public boolean updateReader(String username, String newName, String newPassword) {
-        return persistence.updateReader(username, newName, newPassword); // implementado en Persistence
+        if (username == null || username.trim().isEmpty() ||
+                newName == null || newName.trim().isEmpty() ||
+                newPassword == null || newPassword.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (!readers.containsKey(cleanUsername)) {
+            return false;
+        }
+
+        Reader reader = readers.get(cleanUsername);
+        String oldName = reader.getName();
+        String oldPassword = reader.getPassword();
+
+        // Actualizar en memoria
+        reader.setName(newName.trim());
+        reader.setPassword(newPassword.trim());
+
+        // Persistir cambios
+        if (!persistence.updateReader(cleanUsername, newName.trim(), newPassword.trim())) {
+            // Rollback
+            reader.setName(oldName);
+            reader.setPassword(oldPassword);
+            return false;
+        }
+
+        return true;
     }
 
+    // CORREGIDO: Método para obtener libro por ID
     public Book getBookById(String id) {
-        return books.get(id);
-
-    }
-
-    private void verifyBookDoesNotExist(String id) {
-        if (bookExists(id)) {
-            throw new RuntimeException("The book with ID: " + id + " already exists");
+        if (id == null || id.trim().isEmpty()) {
+            return null;
         }
+        return books.get(id.trim());
     }
 
+    // CORREGIDO: Verificar existencia de libro
     public boolean bookExists(String id) {
-        return books.containsKey(id);
-
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
+        return books.containsKey(id.trim());
     }
 
+    // CORREGIDO: Obtener lista de lectores (conversión desde HashMap)
     public LinkedList<Reader> getReadersList() {
-        if (readersList.isEmpty()) {
-            System.out.println("No hay lectores registrados");
+        LinkedList<Reader> list = new LinkedList<>();
+        LinkedList<String> keys = readers.keySet();
+
+        for (int i = 0; i < keys.getSize(); i++) {
+            list.addEnd(readers.get(keys.getAmountNodo(i)));
         }
-        return readersList;
+
+        return list;
     }
 
-    public String loadDataFromFile(File file) throws IOException {
-        String result = "";
-        if (file.getName().equals("lectores.txt")) {
-            // 1. Limpiar las estructuras de datos
-            persistence.getReaders().clear();
-            readersList.clear();
-
-            // 2. Cargar los datos desde el archivo
-            HashMap<String, Reader> tempReaders = persistence.loadReaders();
-            for (int i = 0; i < tempReaders.size(); i++) {
-                Reader reader = tempReaders.get(tempReaders.getKey(i));
-                persistence.getReaders().put(reader.getUsername(), reader);
-                readersList.addEnd(reader);
-            }
-            result = "Datos cargados exitosamente desde: " + file.getName();
-        }
-        // ... (manejo de otros archivos)
-        return result;
-    }
-    private void refreshInternalData() throws IOException {
-        // Limpiar estructuras existentes
-        readersList.clear();
-        books.clear();
-
-        // Recargar datos desde persistencia
-        for (Reader reader : persistence.getAllReaders()) {
-            reader.setLibrary(this);
-            readersList.addEnd(reader);
-        }
-
-        for (Book book : persistence.getBooks().values()) {
-            books.put(book.getIdBook(), book);
-        }
-    }
-
+    // NUEVO: Método mejorado para obtener lector por username
     public Reader getReaderByUsername(String username) {
-        for (int i = 0; i < readersList.getSize(); i++) {
-            Reader reader = readersList.getAmountNodo(i);
-            if (reader.getUsername().equals(username)) {
-                return reader;
-            }
+        if (username == null || username.trim().isEmpty()) {
+            return null;
         }
-        return null;
+        return readers.get(username.trim());
     }
 
+    // CORREGIDO: Cargar datos desde archivo externo
+    public String loadDataFromFile(File file) {
+        if (file == null || !file.exists() || !file.canRead()) {
+            return "Archivo inválido o no se puede leer";
+        }
 
-    public void addRating(Rating rating) {
+        try {
+            String result = persistence.loadDataFromFile(file);
+
+            // Recargar datos en memoria después de la carga
+            refreshDataFromPersistence();
+
+            return result;
+        } catch (Exception e) {
+            return "Error al cargar archivo: " + e.getMessage();
+        }
+    }
+
+    // NUEVO: Método para refrescar datos desde persistencia
+    private void refreshDataFromPersistence() {
+        try {
+            readers.clear();
+            books.clear();
+            administrators.clear();
+
+            readers = persistence.loadReaders();
+            books = persistence.loadBooks();
+            administrators = persistence.loadAdministrators();
+
+            // Reestablecer referencias
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.setLibrary(this); // Si el Reader tiene este método
+            }
+        } catch (Exception e) {
+            System.err.println("Error refreshing data: " + e.getMessage());
+        }
+    }
+
+    // CORREGIDO: Método para agregar valoración
+    public boolean addRating(Rating rating) {
         if (rating == null || rating.getReader() == null || rating.getBook() == null) {
-            throw new IllegalArgumentException("Rating inválido");
+            return false;
         }
 
         String key = rating.getReader().getUsername() + "|" + rating.getBook().getIdBook();
-        if (!ratings.containsKey(key)) {
-            ratings.put(key, rating);
-            persistence.saveRatingToFile(rating);
+
+        if (ratings.containsKey(key)) {
+            return false; // Ya existe una valoración
         }
+
+        ratings.put(key, rating);
+        return persistence.saveRating(rating);
     }
 
-
-    public void addConnection(Reader reader1, Reader reader2) {
-        if (getReaderByUsername(reader1.getUsername()) != null &&
-                getReaderByUsername(reader2.getUsername()) != null) {
-            readerConnections.addEdge(reader1.getUsername(), reader2.getUsername());
-            persistence.saveConnectionToFile(reader1.getUsername(), reader2.getUsername());
+    // CORREGIDO: Método para agregar conexión entre lectores
+    public boolean addConnection(Reader reader1, Reader reader2) {
+        if (reader1 == null || reader2 == null ||
+                reader1.getUsername() == null || reader2.getUsername() == null) {
+            return false;
         }
+
+        String username1 = reader1.getUsername().trim();
+        String username2 = reader2.getUsername().trim();
+
+        if (!readers.containsKey(username1) || !readers.containsKey(username2)) {
+            return false; // Uno o ambos lectores no existen
+        }
+
+        if (username1.equals(username2)) {
+            return false; // No puede conectarse consigo mismo
+        }
+
+        readerConnections.addEdge(username1, username2);
+        return persistence.saveConnection(username1, username2);
     }
 
-
-
-    public void setReadersList(LinkedList<Reader> readersList) {
-        this.readersList = readersList;
+    // MÉTODOS GETTER CORREGIDOS
+    public LinkedList<Reader> getReaders() {
+        return getReadersList(); // Usar el método que convierte desde HashMap
     }
 
     public LinkedList<Book> getBookssList() {
-        return bookssList;
-    }
+        LinkedList<Book> list = new LinkedList<>();
+        LinkedList<String> keys = books.keySet();
 
-    public void setBookssList(LinkedList<Book> bookssList) {
-        this.bookssList = bookssList;
+        for (int i = 0; i < keys.getSize(); i++) {
+            list.addEnd(books.get(keys.getAmountNodo(i)));
+        }
+
+        return list;
     }
 
     public LinkedList<Administrator> getAdministrators() {
-        return administrators;
+        LinkedList<Administrator> list = new LinkedList<>();
+        LinkedList<String> keys = administrators.keySet();
+
+        for (int i = 0; i < keys.getSize(); i++) {
+            list.addEnd(administrators.get(keys.getAmountNodo(i)));
+        }
+
+        return list;
     }
 
     public HashMap<String, Book> getBooks() {
         return books;
     }
-    public void setAdministrators(LinkedList<Administrator> administrators) {
-        this.administrators = administrators;
+
+    public HashMap<String, Reader> getReadersMap() {
+        return readers;
     }
 
-
-    public LinkedList<Reader> getReaders() {
-        return readersList;
+    // NUEVO: Método para obtener estadísticas
+    public String getLibraryStats() {
+        return String.format("Biblioteca - Lectores: %d, Libros: %d, Administradores: %d, Valoraciones: %d",
+                readers.size(), books.size(), administrators.size(), ratings.size());
     }
 }

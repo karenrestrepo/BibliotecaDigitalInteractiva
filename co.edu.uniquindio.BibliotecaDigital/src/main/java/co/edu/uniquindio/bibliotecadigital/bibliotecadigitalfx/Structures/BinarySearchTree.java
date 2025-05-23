@@ -1,13 +1,22 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class BinarySearchTree<T extends Comparable<T>> {
 
     private class Node {
+        public int value;
         T data;
         Node left, right;
 
         Node(T data) {
             this.data = data;
+        }
+        public Node(int value) {
+            this.value = value;
+            this.left = null;
+            this.right = null;
         }
     }
 
@@ -120,6 +129,22 @@ public class BinarySearchTree<T extends Comparable<T>> {
             System.out.print(node.data + " ");
         }
     }
+
+    public void imprimir() {
+        if (root == null) return;
+
+        Queue<Node> cola = new LinkedList<>();
+        cola.add(root);
+
+        while (!cola.isEmpty()) {
+            Node actual = cola.poll();
+            System.out.print(actual.value + " ");
+
+            if (actual.left != null) cola.add(actual.left);
+            if (actual.right != null) cola.add(actual.right);
+
+
+        }}
 
     // Altura del árbol
     public int height() {
