@@ -87,17 +87,14 @@ public class HomeController {
 
     private void requestBook(String title) {
         try {
-            // Validación inicial de entrada
             if (title == null || title.trim().isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "Título vacío",
                         "Por favor ingrese un título válido para buscar.");
                 return;
             }
 
-            // Buscar el libro usando el método corregido
             Book book = Reader.getBookByTitle(title.trim(), library);
 
-            // Verificar si el libro existe
             if (book == null) {
                 showAlert(Alert.AlertType.INFORMATION, "Libro no encontrado",
                         "No se encontró ningún libro con el título \"" + title + "\".\n" +
@@ -105,7 +102,6 @@ public class HomeController {
                 return;
             }
 
-            // Verificar si el libro está disponible
             if (book.getStatus() != BookStatus.AVAILABLE) {
                 showAlert(Alert.AlertType.WARNING, "Libro no disponible",
                         "El libro \"" + book.getTitle() + "\" está actualmente prestado.\n" +
@@ -113,7 +109,6 @@ public class HomeController {
                 return;
             }
 
-            // Obtener el usuario actual de manera segura
             Person currentUser = Persistence.getCurrentUser();
 
             if (currentUser == null) {
@@ -130,18 +125,13 @@ public class HomeController {
 
             Reader reader = (Reader) currentUser;
 
-            // Intentar realizar el préstamo
             boolean loanSuccess = reader.requestLoan(book);
 
             if (loanSuccess) {
-                // Actualizar la tabla para reflejar el cambio de estado
                 tbBooks.refresh();
-
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
                         "¡Felicitaciones! Has obtenido el préstamo de \"" + book.getTitle() + "\".\n" +
                                 "Recuerda devolverlo a tiempo y no olvides valorarlo cuando termines de leerlo.");
-
-                // Limpiar el campo de búsqueda
                 txtSearchBook.clear();
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error en el préstamo",
@@ -150,12 +140,9 @@ public class HomeController {
             }
 
         } catch (Exception e) {
-            // Manejo de errores inesperados
             showAlert(Alert.AlertType.ERROR, "Error del sistema",
                     "Ocurrió un error inesperado: " + e.getMessage() + "\n" +
                             "Por favor contacta al administrador del sistema.");
-
-            // Log del error para debugging
             System.err.println("Error en requestBook: " + e.getMessage());
             e.printStackTrace();
         }

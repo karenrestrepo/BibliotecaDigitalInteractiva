@@ -1,0 +1,2 @@
+001,El Quijote,Miguel de Cervantes,1605,Clásico
+002,Cien Años de Soledad,Gabriel García Márquez,1967,Realismo Mágico

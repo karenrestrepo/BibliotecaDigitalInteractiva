@@ -10,47 +10,30 @@ import java.io.IOException;
 
 public class LibraryUtil {
     public static Library initializeData() throws IOException {
-        Library library = new Library();
+        Library library = Library.getInstance();
 
-        Reader reader = new Reader();
-        reader.setName("Ana");
-        reader.setUsername("Ana@gmail.com");
-        reader.setPassword("Ana123");
+        // Crear lectores de ejemplo
+        Reader reader1 = new Reader("Ana García", "ana@gmail.com", "Ana123");
+        reader1.setLibrary(library);
+        library.getReadersList().add(reader1);
 
-        library.getReadersList().addBeginning(reader);
+        Reader reader2 = new Reader("Tomás López", "tomas@gmail.com", "Tomas123");
+        reader2.setLibrary(library);
+        library.getReadersList().add(reader2);
 
-        Reader reader1 = new Reader();
-        reader.setName("Tomas");
-        reader.setUsername("Tomas@gmail.com");
-        reader.setPassword("Tomas123");
+        // Crear administrador
+        Administrator administrator = new Administrator("Manuela Admin", "admin@biblioteca.com", "admin123");
+        library.getAdministrators().add(administrator);
 
-        library.getReadersList().addBeginning(reader1);
+        // Crear libros de ejemplo
+        Book book1 = new Book("001", "If I Stay", "Gayle Forman", 2009, "Ficción adulto joven");
+        library.getBookssList().add(book1);
 
-        Administrator administrator = new Administrator();
-        administrator.setName("Manuela");
-        administrator.setUsername("Administrador1@gmail.com");
-        administrator.setPassword("1234");
+        Book book2 = new Book("002", "Apología de Sócrates", "Platón", -399, "Filosofía");
+        library.getBookssList().add(book2);
 
-        Book book = new Book();
-        book.setTitle("If I stay");
-        book.setAuthor("Gayle Forman");
-        book.setCategory("Ficción adulto joven");
-        book.setYear(2009);
-        book.setStatus(BookStatus.AVAILABLE);
-        book.setAverageRating(0);
-
-        library.getBookssList().addBeginning(book);
-
-        Book book1 = new Book();
-        book.setTitle("If I stay");
-        book.setAuthor("Socrates");
-        book.setCategory("Apologia de Socrates");
-        book.setYear(2013);
-        book.setStatus(BookStatus.AVAILABLE);
-        book.setAverageRating(5);
-
-        library.getBookssList().addBeginning(book1);
-
+        Book book3 = new Book("003", "El Quijote", "Miguel de Cervantes", 1605, "Clásico");
+        library.getBookssList().add(book3);
 
         return library;
     }

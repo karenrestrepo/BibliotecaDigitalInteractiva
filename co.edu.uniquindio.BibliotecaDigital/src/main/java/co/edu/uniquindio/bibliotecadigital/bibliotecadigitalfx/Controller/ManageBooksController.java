@@ -91,8 +91,7 @@ public class ManageBooksController {
     @FXML
     void initialize() {
         try {
-            // CORRECCIÓN: Usar el Singleton en lugar de crear nueva instancia
-            library = Library.getInstance(); // En lugar de new Library()
+            library = Library.getInstance();
 
             initView();
 
@@ -111,13 +110,11 @@ public class ManageBooksController {
     // También corregir el método buildBook para validar mejor los datos
     private Book buildBook() {
         try {
-            // Validar que el ID no esté vacío
             String id = txtId.getText();
             if (id == null || id.trim().isEmpty()) {
                 throw new IllegalArgumentException("El ID del libro no puede estar vacío");
             }
 
-            // Validar que el año sea un número válido
             String yearText = txtYear.getText();
             if (yearText == null || yearText.trim().isEmpty()) {
                 throw new IllegalArgumentException("El año no puede estar vacío");
@@ -143,7 +140,6 @@ public class ManageBooksController {
             );
 
         } catch (Exception e) {
-            // Re-lanzar con mensaje más claro
             throw new RuntimeException("Error construyendo el libro: " + e.getMessage(), e);
         }
     }
