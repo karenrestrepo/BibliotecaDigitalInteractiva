@@ -4,9 +4,12 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.ListNode;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.Node;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.fxml.FXML;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.text.Text;
@@ -57,14 +60,42 @@ public class ReaderController {
     }
     public void loadReaderData() {
         if (reader != null && library != null) {
-            loansListView.getItems().addAll(reader.getLoanHistoryList().stream().toList());
-            recommendationsListView.getItems().addAll(reader.getRecommendations());
+            loansListView.getItems().clear();
+            recommendationsListView.getItems().clear();
+            friendsListView.getItems().clear();
 
-            // Asegúrate de pasar el tipo correcto, por ejemplo, si necesitas un LibrarySystem:
+            // Cargar la lista de préstamos
+            ListNode currentLoan = reader.getLoanHistoryList().getFirstNode();
+            while (currentLoan != null) {
+                // Asegúrate que getAmountNodo() devuelve el tipo correcto que espera loansListView (por ej Book)
+                loansListView.getItems().add((Book) currentLoan.getAmountNodo());
+
+                currentLoan = currentLoan.getNextNodo();
+            }
+
+            // Cargar las recomendaciones
+            ListNode currentRec = reader.getRecommendations().getFirstNode();
+            while (currentRec != null) {
+                recommendationsListView.getItems().add((Book) currentRec.getAmountNodo());
+
+                currentRec = currentRec.getNextNodo();
+            }
+
+            // Cargar las sugerencias de amigos (muestra sólo el username)
             LibrarySystem librarySystem = getLibrarySystemFromLibrary(library);
-            friendsListView.getItems().addAll(reader.getSuggestions(librarySystem).stream().map(r -> r.getUsername()).toList());
+            ListNode currentSug = reader.getSuggestions(librarySystem).getFirstNode();
+            while (currentSug != null) {
+                Reader r = (Reader) currentSug.getAmountNodo();
+                friendsListView.getItems().add(r.getUsername());
+                currentSug = currentSug.getNextNodo();
+            }
         }
     }
+
+
+
+
+
 
     private LibrarySystem getLibrarySystemFromLibrary(Library library) {
         // Lógica para obtener LibrarySystem desde Library

@@ -1,3 +1,5 @@
-Ana,ana@gmail.com,Ana123
-Vanessa,vane@gmail.com,123
+# Archivo de lectores - Nombre,Usuario,Contraseña
 Esteban,esteban@gmail.com,123
+Ana,ana@gmail.com,Ana123
+Juliana,july@.com,2020
+Vanessa,vane@gmail.com,123

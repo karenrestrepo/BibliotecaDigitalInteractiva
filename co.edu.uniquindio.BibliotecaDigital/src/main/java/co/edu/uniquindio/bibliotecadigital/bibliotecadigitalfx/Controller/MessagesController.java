@@ -430,6 +430,10 @@ public class MessagesController {
         }
     }
 
+    public void onSend(ActionEvent event) {
+
+    }
+
     // ================== CLASE AUXILIAR PARA MENSAJES ==================
 
     /**

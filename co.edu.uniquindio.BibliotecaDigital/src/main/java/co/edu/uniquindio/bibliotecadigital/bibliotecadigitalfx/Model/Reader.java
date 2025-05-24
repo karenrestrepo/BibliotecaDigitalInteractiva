@@ -5,10 +5,6 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinityS
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.PriorityQueue;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Clase Reader mejorada con sistema completo de recomendaciones,
@@ -286,7 +282,7 @@ public class Reader extends Person {
             if (rating.getStars() >= 4) {
                 Book likedBook = rating.getBook();
 
-                // Recopilar autores y categorías preferidas
+                // Recopilar autores y categorías preferidas sin duplicados
                 if (!containsString(preferredAuthors, likedBook.getAuthor())) {
                     preferredAuthors.add(likedBook.getAuthor());
                 }
@@ -301,7 +297,7 @@ public class Reader extends Person {
         for (int i = 0; i < allBooks.getSize(); i++) {
             Book book = allBooks.getAmountNodo(i);
 
-            // Verificar que no lo ha leído
+            // Verificar que el usuario no lo ha leído
             if (!hasReadBook(book)) {
                 // Verificar si es de autor o categoría preferida
                 if (containsString(preferredAuthors, book.getAuthor()) ||
@@ -313,6 +309,7 @@ public class Reader extends Person {
 
         return recommendations;
     }
+
 
     /**
      * Verifica si el lector ha leído un libro
