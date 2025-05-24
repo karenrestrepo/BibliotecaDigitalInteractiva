@@ -11,22 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * Sistema de Persistencia Completamente Corregido para Biblioteca Digital
- *
- * CONCEPTOS CLAVE APLICADOS:
- * 1. Manejo dual de recursos: classpath para JAR y filesystem para desarrollo
- * 2. Gestión robusta de errores con fallbacks
- * 3. Separación de responsabilidades: carga vs escritura
- * 4. Debug sistemático para troubleshooting
- * 5. Compatibilidad con IntelliJ IDEA y ejecución desde JAR
- */
 public class Persistence {
     private static Person currentUser;
 
     // CONFIGURACIÓN DE RUTAS - Problema original identificado
     private static final String RESOURCES_PACKAGE = "Archivos/";
-    private static final String DEV_BASE_PATH = "src/main/resources/Archivos/";
+    private static final String DEV_BASE_PATH = "co.edu.uniquindio.BibliotecaDigital/src/main/resources/Archivos/";
 
     // Rutas específicas para cada tipo de archivo
     private static final String READERS_PATH = "Readers/Readers.txt";
