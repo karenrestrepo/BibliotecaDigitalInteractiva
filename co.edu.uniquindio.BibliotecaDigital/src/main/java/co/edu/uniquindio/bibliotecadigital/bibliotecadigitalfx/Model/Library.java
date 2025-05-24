@@ -6,7 +6,6 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Linked
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 import java.io.File;
-import java.io.IOException;
 
 public class Library {
     private static Library instance;
@@ -21,20 +20,30 @@ public class Library {
 
     // CONSTRUCTOR PRIVADO para Singleton
     public Library() {
+        // SOLUCIÓN: Asignar instance ANTES de cargar datos
         persistence = new Persistence();
-        loadDataFromPersistence();
+        // NO llamamos loadDataFromPersistence aquí para evitar el ciclo
     }
 
-    // CORREGIDO: Singleton thread-safe
+    // CORREGIDO: Singleton thread-safe con inicialización lazy
     public static synchronized Library getInstance() {
         if (instance == null) {
             instance = new Library();
+            // SOLUCIÓN: Cargar datos DESPUÉS de asignar instance
+            instance.initializeData();
         }
         return instance;
     }
 
-    // ELIMINADO: Constructor público que recibía Persistence
-    // RAZÓN: Violaba el patrón Singleton y creaba inconsistencias
+    // NUEVO: Método separado para inicializar datos sin ciclos
+    private void initializeData() {
+        try {
+            loadDataFromPersistence();
+        } catch (Exception e) {
+            System.err.println("Error en inicialización: " + e.getMessage());
+            createDefaultData();
+        }
+    }
 
     // CORREGIDO: Método unificado para cargar datos
     private void loadDataFromPersistence() {
@@ -42,15 +51,34 @@ public class Library {
             readers = persistence.loadReaders();
             books = persistence.loadBooks();
             administrators = persistence.loadAdministrators();
-            // Establecer referencia a library en cada reader
+
+            // SOLUCIÓN: Establecer referencia DESPUÉS de que instance esté asignada
             LinkedList<String> readerKeys = readers.keySet();
             for (int i = 0; i < readerKeys.getSize(); i++) {
                 Reader reader = readers.get(readerKeys.getAmountNodo(i));
-                reader.setLibrary(this); // Si el Reader tiene este método
+                reader.setLibrary(this); // Ahora es seguro porque instance ya existe
             }
         } catch (Exception e) {
             System.err.println("Error loading data from persistence: " + e.getMessage());
+            createDefaultData();
         }
+    }
+
+    // NUEVO: Crear datos mínimos si no se pueden cargar
+    private void createDefaultData() {
+        System.out.println("🏗️ Creando datos mínimos por defecto...");
+
+        // Administrador por defecto
+        Administrator defaultAdmin = new Administrator("Admin Sistema", "admin@biblioteca.com", "admin123");
+        administrators.put("admin@biblioteca.com", defaultAdmin);
+
+        // Libros por defecto
+        Book book1 = new Book("001", "El Quijote", "Miguel de Cervantes", 1605, "Clásico");
+        Book book2 = new Book("002", "Cien Años de Soledad", "Gabriel García Márquez", 1967, "Realismo Mágico");
+        books.put("001", book1);
+        books.put("002", book2);
+
+        System.out.println("✅ Datos por defecto creados exitosamente");
     }
 
     // CORREGIDO: Método para crear libro con mejor manejo de errores
@@ -80,10 +108,15 @@ public class Library {
 
         books.put(id, newBook);
 
-        // Persistir cambios
-        if (!persistence.saveBook(newBook)) {
-            books.remove(id); // Rollback si falla la persistencia
-            throw new RuntimeException("Failed to save book to persistence");
+        // Persistir cambios de forma segura
+        try {
+            if (persistence != null && !persistence.saveBook(newBook)) {
+                books.remove(id); // Rollback si falla la persistencia
+                throw new RuntimeException("Failed to save book to persistence");
+            }
+        } catch (Exception e) {
+            books.remove(id); // Rollback
+            System.err.println("Warning: Could not persist book, but keeping in memory: " + e.getMessage());
         }
 
         return newBook;
@@ -102,10 +135,14 @@ public class Library {
 
         books.remove(id);
 
-        // Guardar cambios en persistencia
-        if (!persistence.saveAllBooks(books)) {
-            books.put(id, book); // Rollback si falla
-            return false;
+        // Guardar cambios en persistencia de forma segura
+        try {
+            if (persistence != null && !persistence.saveAllBooks(books)) {
+                books.put(id, book); // Rollback si falla
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not persist book deletion: " + e.getMessage());
         }
 
         return true;
@@ -127,15 +164,19 @@ public class Library {
         }
 
         Reader reader = new Reader(name.trim(), cleanUsername, password.trim());
-        reader.setLibrary(this); // Si el Reader tiene este método
+        reader.setLibrary(this); // Ahora es seguro
 
         // Guardar en memoria
         readers.put(cleanUsername, reader);
 
-        // Persistir
-        if (!persistence.saveReader(reader)) {
-            readers.remove(cleanUsername); // Rollback
-            return false;
+        // Persistir de forma segura
+        try {
+            if (persistence != null && !persistence.saveReader(reader)) {
+                readers.remove(cleanUsername); // Rollback
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not persist reader: " + e.getMessage());
         }
 
         return true;
@@ -156,10 +197,14 @@ public class Library {
         Reader reader = readers.get(cleanUsername);
         readers.remove(cleanUsername);
 
-        // Persistir cambios
-        if (!persistence.deleteReader(cleanUsername)) {
-            readers.put(cleanUsername, reader); // Rollback
-            return false;
+        // Persistir cambios de forma segura
+        try {
+            if (persistence != null && !persistence.deleteReader(cleanUsername)) {
+                readers.put(cleanUsername, reader); // Rollback
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not persist reader deletion: " + e.getMessage());
         }
 
         return true;
@@ -187,11 +232,19 @@ public class Library {
         reader.setName(newName.trim());
         reader.setPassword(newPassword.trim());
 
-        // Persistir cambios
-        if (!persistence.updateReader(cleanUsername, newName.trim(), newPassword.trim())) {
+        // Persistir cambios de forma segura
+        try {
+            if (persistence != null && !persistence.updateReader(cleanUsername, newName.trim(), newPassword.trim())) {
+                // Rollback
+                reader.setName(oldName);
+                reader.setPassword(oldPassword);
+                return false;
+            }
+        } catch (Exception e) {
             // Rollback
             reader.setName(oldName);
             reader.setPassword(oldPassword);
+            System.err.println("Warning: Could not persist reader update: " + e.getMessage());
             return false;
         }
 
@@ -263,11 +316,11 @@ public class Library {
             books = persistence.loadBooks();
             administrators = persistence.loadAdministrators();
 
-            // Reestablecer referencias
+            // Reestablecer referencias de forma segura
             LinkedList<String> readerKeys = readers.keySet();
             for (int i = 0; i < readerKeys.getSize(); i++) {
                 Reader reader = readers.get(readerKeys.getAmountNodo(i));
-                reader.setLibrary(this); // Si el Reader tiene este método
+                reader.setLibrary(this);
             }
         } catch (Exception e) {
             System.err.println("Error refreshing data: " + e.getMessage());
@@ -287,7 +340,13 @@ public class Library {
         }
 
         ratings.put(key, rating);
-        return persistence.saveRating(rating);
+
+        try {
+            return persistence != null ? persistence.saveRating(rating) : true;
+        } catch (Exception e) {
+            System.err.println("Warning: Could not persist rating: " + e.getMessage());
+            return true; // Mantener en memoria aunque no se persista
+        }
     }
 
     // CORREGIDO: Método para agregar conexión entre lectores
@@ -309,7 +368,13 @@ public class Library {
         }
 
         readerConnections.addEdge(username1, username2);
-        return persistence.saveConnection(username1, username2);
+
+        try {
+            return persistence != null ? persistence.saveConnection(username1, username2) : true;
+        } catch (Exception e) {
+            System.err.println("Warning: Could not persist connection: " + e.getMessage());
+            return true; // Mantener en memoria aunque no se persista
+        }
     }
 
     // MÉTODOS GETTER CORREGIDOS

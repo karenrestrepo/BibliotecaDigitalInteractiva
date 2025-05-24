@@ -43,9 +43,6 @@ public class Persistence {
         verifyFile("Libros", BOOKS_PATH);
         verifyFile("Valoraciones", RATINGS_PATH);
         verifyFile("Conexiones", CONNECTIONS_PATH);
-
-        // Crear datos por defecto si es necesario
-        ensureMinimalData();
     }
 
     /**
@@ -76,8 +73,12 @@ public class Persistence {
     }
 
     private boolean canReadFromFilesystem(String relativePath) {
-        Path path = Paths.get(DEV_BASE_PATH + relativePath);
-        return Files.exists(path) && Files.isReadable(path);
+        try {
+            Path path = Paths.get(DEV_BASE_PATH + relativePath);
+            return Files.exists(path) && Files.isReadable(path);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -86,22 +87,41 @@ public class Persistence {
      */
     private BufferedReader getFileReader(String relativePath) throws IOException {
         // ESTRATEGIA 1: Intentar leer desde classpath (para JAR/producción)
-        InputStream classPathStream = getClass().getClassLoader()
-                .getResourceAsStream(RESOURCES_PACKAGE + relativePath);
+        try {
+            InputStream classPathStream = getClass().getClassLoader()
+                    .getResourceAsStream(RESOURCES_PACKAGE + relativePath);
 
-        if (classPathStream != null) {
-            System.out.println("📖 Leyendo " + relativePath + " desde classpath");
-            return new BufferedReader(new InputStreamReader(classPathStream));
+            if (classPathStream != null) {
+                System.out.println("📖 Leyendo " + relativePath + " desde classpath");
+                return new BufferedReader(new InputStreamReader(classPathStream));
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo leer desde classpath: " + e.getMessage());
         }
 
         // ESTRATEGIA 2: Leer desde filesystem (para desarrollo en IntelliJ)
-        Path filesystemPath = Paths.get(DEV_BASE_PATH + relativePath);
-        if (Files.exists(filesystemPath)) {
-            System.out.println("📖 Leyendo " + relativePath + " desde filesystem");
-            return Files.newBufferedReader(filesystemPath);
+        try {
+            Path filesystemPath = Paths.get(DEV_BASE_PATH + relativePath);
+            if (Files.exists(filesystemPath)) {
+                System.out.println("📖 Leyendo " + relativePath + " desde filesystem");
+                return Files.newBufferedReader(filesystemPath);
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo leer desde filesystem: " + e.getMessage());
         }
 
-        throw new IOException("No se puede encontrar " + relativePath + " en classpath ni filesystem");
+        // ESTRATEGIA 3: Buscar en directorio de recursos alternativo
+        try {
+            Path altPath = Paths.get("src/main/resources/Archivos/" + relativePath);
+            if (Files.exists(altPath)) {
+                System.out.println("📖 Leyendo " + relativePath + " desde directorio alternativo");
+                return Files.newBufferedReader(altPath);
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo leer desde directorio alternativo: " + e.getMessage());
+        }
+
+        throw new IOException("No se puede encontrar " + relativePath + " en ninguna ubicación");
     }
 
     public HashMap<String, Administrator> loadAdministrators() {
@@ -117,14 +137,6 @@ public class Persistence {
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 System.out.println("📝 Línea " + lineNumber + " RAW: [" + line + "] (longitud: " + line.length() + ")");
-
-                // Mostrar cada caracter para detectar caracteres ocultos
-                for (int i = 0; i < line.length(); i++) {
-                    char c = line.charAt(i);
-                    if (c < 32 || c > 126) { // Caracteres no imprimibles
-                        System.out.println("   ⚠️ Caracter no imprimible en posición " + i + ": " + (int)c);
-                    }
-                }
 
                 line = line.trim();
                 System.out.println("📝 Línea " + lineNumber + " TRIM: [" + line + "] (longitud: " + line.length() + ")");
@@ -160,9 +172,6 @@ public class Persistence {
                         // Validación de datos
                         if (name.isEmpty() || username.isEmpty() || password.isEmpty()) {
                             System.err.println("   ❌ CAMPOS VACÍOS detectados en línea " + lineNumber);
-                            System.err.println("      name.isEmpty(): " + name.isEmpty());
-                            System.err.println("      username.isEmpty(): " + username.isEmpty());
-                            System.err.println("      password.isEmpty(): " + password.isEmpty());
                             continue;
                         }
 
@@ -178,7 +187,6 @@ public class Persistence {
 
                 } catch (Exception e) {
                     System.err.println("   💥 EXCEPCIÓN procesando línea " + lineNumber + ": " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                    e.printStackTrace();
                 }
             }
 
@@ -197,7 +205,6 @@ public class Persistence {
 
         } catch (IOException e) {
             System.err.println("❌ EXCEPCIÓN DE IO leyendo administradores: " + e.getMessage());
-            e.printStackTrace();
             createDefaultAdministrators(admins);
         }
 
@@ -218,8 +225,8 @@ public class Persistence {
     }
 
     /**
-     * CARGA DE LECTORES CORREGIDA
-     * Mismo patrón que administradores pero para lectores
+     * CARGA DE LECTORES CORREGIDA - SIN REFERENCIA CIRCULAR
+     * SOLUCIÓN: No establecer referencia a Library aquí
      */
     public HashMap<String, Reader> loadReaders() {
         HashMap<String, Reader> readers = new HashMap<>();
@@ -250,8 +257,8 @@ public class Persistence {
                         }
 
                         Reader readerObj = new Reader(name, username, password);
-                        // IMPORTANTE: Establecer referencia a la biblioteca
-                        readerObj.setLibrary(Library.getInstance());
+                        // SOLUCIÓN: NO establecer referencia a Library aquí para evitar ciclo infinito
+                        // La referencia se establecerá después en Library.loadDataFromPersistence()
                         readers.put(username, readerObj);
 
                         System.out.println("📚 Lector cargado: " + name + " (" + username + ")");
@@ -384,7 +391,12 @@ public class Persistence {
 
             if (reader.getPassword().equals(cleanPassword)) {
                 currentUser = reader;
-                reader.setLibrary(Library.getInstance());
+                // SOLUCIÓN: Establecer referencia de forma segura
+                try {
+                    reader.setLibrary(Library.getInstance()); // Ahora es seguro porque no estamos en constructor
+                } catch (Exception e) {
+                    System.err.println("⚠️ No se pudo establecer referencia a biblioteca: " + e.getMessage());
+                }
                 System.out.println("🎉 Login exitoso como lector");
                 return reader;
             } else {
@@ -565,59 +577,70 @@ public class Persistence {
      * MÉTODOS PARA DATOS POR DEFECTO
      * Se ejecutan cuando no se pueden cargar los archivos
      */
-    private void ensureMinimalData() {
-        // Verificar administradores
-        HashMap<String, Administrator> admins = loadAdministrators();
-        if (admins.size() == 0) {
-            System.out.println("🏗️ Creando administradores por defecto...");
-            createDefaultAdministrators(admins);
-        }
-
-        // Verificar libros
-        HashMap<String, Book> books = loadBooks();
-        if (books.size() == 0) {
-            System.out.println("🏗️ Creando libros por defecto...");
-            createDefaultBooks(books);
-        }
-    }
-
     private void createDefaultAdministrators(HashMap<String, Administrator> admins) {
-        Administrator admin1 = new Administrator("Manuela Aristizabal", "administrador1@gmail.com", "1234");
-        Administrator admin2 = new Administrator("Karen Restrepo", "administrador2@gmail.com", "4321");
+        Administrator admin1 = new Administrator("Administrador Principal", "admin@biblioteca.com", "admin123");
+        Administrator admin2 = new Administrator("María Bibliotecaria", "maria.admin@biblioteca.com", "biblioteca2024");
+        Administrator admin3 = new Administrator("Carlos Supervisor", "carlos.admin@biblioteca.com", "supervisor123");
 
-        admins.put("administrador1@gmail.com", admin1);
-        admins.put("administrador2@gmail.com", admin2);
+        admins.put("admin@biblioteca.com", admin1);
+        admins.put("maria.admin@biblioteca.com", admin2);
+        admins.put("carlos.admin@biblioteca.com", admin3);
 
         System.out.println("✅ Administradores por defecto disponibles:");
-        System.out.println("   - administrador1@gmail.com / 1234");
-        System.out.println("   - administrador2@gmail.com / 4321");
+        System.out.println("   - admin@biblioteca.com / admin123");
+        System.out.println("   - maria.admin@biblioteca.com / biblioteca2024");
+        System.out.println("   - carlos.admin@biblioteca.com / supervisor123");
     }
 
     private void createDefaultReaders(HashMap<String, Reader> readers) {
         Reader reader1 = new Reader("Esteban", "esteban@gmail.com", "123");
         Reader reader2 = new Reader("Ana", "ana@gmail.com", "Ana123");
-
-        reader1.setLibrary(Library.getInstance());
-        reader2.setLibrary(Library.getInstance());
+        Reader reader3 = new Reader("Juan Pérez", "juan@email.com", "juan123");
 
         readers.put("esteban@gmail.com", reader1);
         readers.put("ana@gmail.com", reader2);
+        readers.put("juan@email.com", reader3);
 
         System.out.println("✅ Lectores por defecto disponibles:");
         System.out.println("   - esteban@gmail.com / 123");
         System.out.println("   - ana@gmail.com / Ana123");
+        System.out.println("   - juan@email.com / juan123");
     }
 
     private void createDefaultBooks(HashMap<String, Book> books) {
-        Book book1 = new Book("02", "Rosario Tijeras", "Jorge Franco Ramos", 2010, "Urbana");
-        Book book2 = new Book("03", "Orgullo y Prejuicio", "Jane Austen", 1813, "Romance Epoca");
+        Book book1 = new Book("001", "El Quijote", "Miguel de Cervantes", 1605, "Clásico");
+        Book book2 = new Book("002", "Cien Años de Soledad", "Gabriel García Márquez", 1967, "Realismo Mágico");
+        Book book3 = new Book("003", "Orgullo y Prejuicio", "Jane Austen", 1813, "Romance Época");
+        Book book4 = new Book("004", "1984", "George Orwell", 1949, "Distopía");
+        Book book5 = new Book("005", "Harry Potter y la Piedra Filosofal", "J.K. Rowling", 1997, "Fantasía");
+        Book book6 = new Book("006", "El Señor de los Anillos", "J.R.R. Tolkien", 1954, "Fantasía");
+        Book book7 = new Book("007", "Crimen y Castigo", "Fiódor Dostoyevski", 1866, "Clásico");
+        Book book8 = new Book("008", "La Odisea", "Homero", -800, "Épica");
+        Book book9 = new Book("009", "Don Juan Tenorio", "José Zorrilla", 1844, "Teatro");
+        Book book10 = new Book("010", "Rayuela", "Julio Cortázar", 1963, "Literatura Experimental");
 
-        books.put("02", book1);
-        books.put("03", book2);
+        books.put("001", book1);
+        books.put("002", book2);
+        books.put("003", book3);
+        books.put("004", book4);
+        books.put("005", book5);
+        books.put("006", book6);
+        books.put("007", book7);
+        books.put("008", book8);
+        books.put("009", book9);
+        books.put("010", book10);
 
         System.out.println("✅ Libros por defecto disponibles:");
-        System.out.println("   - 02: Rosario Tijeras");
-        System.out.println("   - 03: Orgullo y Prejuicio");
+        System.out.println("   - 001: El Quijote");
+        System.out.println("   - 002: Cien Años de Soledad");
+        System.out.println("   - 003: Orgullo y Prejuicio");
+        System.out.println("   - 004: 1984");
+        System.out.println("   - 005: Harry Potter y la Piedra Filosofal");
+        System.out.println("   - 006: El Señor de los Anillos");
+        System.out.println("   - 007: Crimen y Castigo");
+        System.out.println("   - 008: La Odisea");
+        System.out.println("   - 009: Don Juan Tenorio");
+        System.out.println("   - 010: Rayuela");
     }
 
     /**
