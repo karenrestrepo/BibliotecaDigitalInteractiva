@@ -58,6 +58,7 @@ public class ReaderController {
     public void setPersistence(Persistence persistence) {
         this.persistence = persistence;
     }
+
     public void loadReaderData() {
         if (reader != null && library != null) {
             loansListView.getItems().clear();
@@ -91,8 +92,6 @@ public class ReaderController {
             }
         }
     }
-
-
 
 
 

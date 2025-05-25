@@ -14,10 +14,13 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 
 
 public class HomeController {
+    private MyLoansController myLoansController;
 
     private Library library;
     Book selectedBook;
@@ -42,6 +45,21 @@ public class HomeController {
         initTable();
         loadBooksOrderedByTitle(); // Carga inicial
         setupLiveSearch();         // Búsqueda en tiempo real
+        loadController();
+    }
+
+    private void loadController() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/co/edu/uniquindio/bibliotecadigital/bibliotecadigitalfx/MyLoans.fxml"));
+            Parent loansRoot = loader.load(); // Solo carga, no lo muestras
+
+            MyLoansController myLoans = loader.getController();
+            this.setMyLoansController(myLoans);        // ← establecer referencia
+            myLoans.setHomeController(this);           // ← conexión cruzada
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initTable() {
@@ -100,7 +118,7 @@ public class HomeController {
 
 
     @FXML
-    void onRequestBook(ActionEvent event) {
+    void onRequestBook(ActionEvent event) throws IOException {
         String title = txtSearchBook.getText();
         if (!title.isEmpty()) {
             requestBook(title.trim());
@@ -148,6 +166,8 @@ public class HomeController {
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
                         "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!");
                 txtSearchBook.clear();
+                myLoansController.refreshLoans();
+
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error de préstamo",
                         "Ya tienes este libro o alcanzaste el límite de préstamos.");
@@ -171,6 +191,9 @@ public class HomeController {
             txtSearchBook.setText(selectedBook.getTitle());
         }
     }
+    public void setMyLoansController(MyLoansController myLoansController) {
+        this.myLoansController = myLoansController;
+    }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
@@ -178,4 +201,5 @@ public class HomeController {
         alert.setContentText(content);
         alert.showAndWait();
     }
+
 }
