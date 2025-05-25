@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="719.0" prefWidth="612.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.AdministratorController">
+<AnchorPane prefHeight="724.0" prefWidth="612.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.AdministratorController">
     <children>
-        <TabPane layoutX="8.0" layoutY="8.0" prefHeight="704.0" prefWidth="596.0" tabClosingPolicy="UNAVAILABLE">
+        <TabPane layoutX="8.0" layoutY="40.0" prefHeight="704.0" prefWidth="596.0" tabClosingPolicy="UNAVAILABLE">
             <tabs>
                 <Tab text="Gestión de libros">
                     <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                             <children>
-                                <SplitPane layoutX="-4.0" layoutY="3.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
+                                <SplitPane layoutX="-4.0" layoutY="-8.0" orientation="VERTICAL" prefHeight="542.0" prefWidth="790.0">
                                     <items>
                                         <fx:include source="ManageBooks.fxml" />
                                     </items>
@@ -76,5 +77,6 @@
                 </Tab>
             </tabs>
         </TabPane>
+      <Label fx:id="AdminitratorIngreso" layoutX="32.0" layoutY="14.0" text="Label" />
     </children>
 </AnchorPane>

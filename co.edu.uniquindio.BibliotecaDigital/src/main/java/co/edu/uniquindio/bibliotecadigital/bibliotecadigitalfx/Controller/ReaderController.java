@@ -1,5 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
@@ -46,6 +47,9 @@ public class ReaderController {
     @FXML
     private Pane graphPane;
 
+    @FXML
+    private Label ReaderIngresado;
+
     public void setLector(Reader reader) throws IOException {
         this.reader = reader;
         this.library = getLibraryFromPersistence();
@@ -54,6 +58,13 @@ public class ReaderController {
 
     @FXML
     private void initialize() {
+        Person user = Persistence.getCurrentUser();
+
+        if (user != null) {
+            ReaderIngresado.setText("Bienvenido, " + user.getName());
+        } else {
+            ReaderIngresado.setText("Lector");
+        }
     }
     public void setPersistence(Persistence persistence) {
         this.persistence = persistence;

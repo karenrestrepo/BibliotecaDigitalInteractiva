@@ -993,4 +993,6 @@ public class Persistence {
                 canReadFromClasspath(ADMINS_PATH) ? "Producción (JAR)" : "Desarrollo (IntelliJ)"
         );
     }
+
+
 }
