@@ -12,10 +12,13 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -49,16 +52,32 @@ public class MyLoansController {
     @FXML private TableColumn<LoanInfo, String> tcStatus;
     @FXML private TableColumn<LoanInfo, String> tcDueDate;
     @FXML private TableColumn<LoanInfo, Void> tcActions;
+
     @FXML private Button tcReturn;
+
 
     private Reader currentReader;
     private Library library;
     private ObservableList<LoanInfo> loansList;
+    private HomeController homeController;
 
     // Configuración del sistema de préstamos
     private static final int LOAN_DURATION_DAYS = 14;  // 2 semanas
     private static final int MAX_RENEWALS = 2;         // Máximo 2 renovaciones
     private static final int WARNING_DAYS = 3;         // Alerta 3 días antes del vencimiento
+
+    @FXML
+    void onReturn(ActionEvent event) {
+        returnBook();
+
+    }
+
+
+
+    @FXML
+    void onRefresh(ActionEvent event) {
+        updateTable();
+    }
 
     @FXML
     void initialize() {
@@ -75,6 +94,7 @@ public class MyLoansController {
         loadCurrentLoans();
         setupPeriodicChecks();
     }
+
 
     /**
      * Inicializa los datos del usuario y biblioteca
@@ -588,5 +608,77 @@ public class MyLoansController {
             return dueDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         }
     }
+    public void updateTable() {
+        LinkedList<Book> loanHistory = currentReader.getLoanHistoryList();
+
+        for (Book book : loanHistory) {
+            // Solo mostrar libros actualmente prestados
+            if (book.getStatus() == BookStatus.CHECKED_OUT) {
+                LoanInfo loanInfo = new LoanInfo(book);
+                loansList.add(loanInfo);
+            }
+        }
+
+        tbLoans.setItems(loansList);
+
+        // Mostrar resumen
+
+        // Verificar libros próximos a vencer
+        checkUpcomingDueDates();
+    }
+
+    public void setHomeController(HomeController homeController) {
+        this.homeController = homeController;
+    }
+
+    private void returnBook() {
+        LoanInfo selectedLoan = tbLoans.getSelectionModel().getSelectedItem();
+
+        if (selectedLoan == null) {
+            showAlert("Selección requerida", "Por favor selecciona un préstamo de la tabla.");
+            return;
+        }
+
+        try {
+            Book book = selectedLoan.getBook();
+
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmation.setTitle("Confirmar Devolución");
+            confirmation.setHeaderText("¿Devolver este libro?");
+            confirmation.setContentText("Título: \"" + book.getTitle() + "\"\nAutor: " + book.getAuthor());
+
+            if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+
+                boolean success = currentReader.returnBook(book);
+
+                if (success) {
+                    // Mensaje de éxito y multa si aplica
+                    String message = "Libro devuelto exitosamente.";
+                    if (selectedLoan.isOverdue()) {
+                        int daysOverdue = selectedLoan.getDaysOverdue();
+                        double fine = calculateLateFee(daysOverdue);
+                        message += String.format("\n\nMulta por retraso: $%.2f (%d días)", fine, daysOverdue);
+                    }
+
+                    showAlert("Devolución Exitosa", message);
+
+                    // Preguntar por valoración
+                    if (!hasRatedBook(book)) {
+                        askForRating(book);
+                    }
+
+                    // Actualizar tabla
+                    refreshLoans();
+                } else {
+                    showAlert("Error", "No se pudo procesar la devolución del libro.");
+                }
+            }
+
+        } catch (Exception e) {
+            showAlert("Error", "Error al procesar la devolución: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }
 
