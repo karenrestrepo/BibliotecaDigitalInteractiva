@@ -2,14 +2,17 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.BinarySearchTree;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.NodeTree;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 
 public class Persistence {
     private static Person currentUser;
@@ -348,6 +351,75 @@ public class Persistence {
         return books;
     }
 
+    //// Arbol de libro
+    public BinarySearchTree<Book> loadBooksTree(Comparator<Book> comparator) {
+        BinarySearchTree<Book> booksTree = new BinarySearchTree<>(comparator);
+
+        try (BufferedReader reader = getFileReader(BOOKS_PATH)) {
+            String line;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                line = line.trim();
+
+                // Saltar líneas vacías o comentarios
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                try {
+                    String[] parts = line.split(",");
+
+                    // Validar cantidad de campos
+                    if (parts.length < 5) {
+                        System.err.println("⚠️ Línea " + lineNumber + ": formato incorrecto → " + line);
+                        continue;
+                    }
+
+                    // Extraer y limpiar campos
+                    String id = parts[0].trim();
+                    String title = parts[1].trim();
+                    String author = parts[2].trim();
+                    String yearStr = parts[3].trim();
+                    String category = parts[4].trim();
+
+                    // Validar campos vacíos
+                    if (id.isEmpty() || title.isEmpty() || author.isEmpty() || category.isEmpty()) {
+                        System.err.println("⚠️ Línea " + lineNumber + ": campos vacíos");
+                        continue;
+                    }
+
+                    // Validar año
+                    int year;
+                    try {
+                        year = Integer.parseInt(yearStr);
+                    } catch (NumberFormatException e) {
+                        System.err.println("⚠️ Línea " + lineNumber + ": año inválido → " + yearStr);
+                        continue;
+                    }
+
+                    // Crear libro y agregar al árbol
+                    Book book = new Book(id, title, author, year, category);
+                    booksTree.insert(book);
+                    System.out.println("📖 Libro cargado: " + title + " (" + id + ")");
+
+                } catch (Exception e) {
+                    System.err.println("❌ Línea " + lineNumber + ": error → " + e.getMessage());
+                }
+            }
+
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo archivo de libros: " + e.getMessage());
+            createDefaultBooksTree(booksTree); // Cargar libros por defecto
+        }
+
+        System.out.println("✅ Total de libros cargados: " + booksTree.size());
+        return booksTree;
+    }
+
+
+
     /**
      * SISTEMA DE AUTENTICACIÓN MEJORADO
      * Con debug detallado y manejo robusto de casos edge
@@ -516,6 +588,53 @@ public class Persistence {
         }
     }
 
+    public boolean saveAllBooksTree(BinarySearchTree<Book> booksTree) {
+        if (booksTree == null || booksTree.getRoot() == null) {
+            System.err.println("❌ Árbol vacío o nulo");
+            return false;
+        }
+
+        try {
+            Path dirPath = Paths.get(DEV_BASE_PATH + "Books");
+            Files.createDirectories(dirPath);
+
+            Path filePath = Paths.get(DEV_BASE_PATH + "BooksTree.txt"); // Archivo separado para el árbol
+
+            try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+                writer.write("# Archivo de libros en árbol - ID,Título,Autor,Año,Categoría");
+                writer.newLine();
+
+                // Recorremos el árbol en orden para guardar
+                saveBooksInOrder(booksTree.getRoot(), writer);
+
+                System.out.println("💾 Guardados libros del árbol");
+                return true;
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error guardando libros del árbol: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void saveBooksInOrder(NodeTree<Book> node, BufferedWriter writer) throws IOException {
+        if (node != null) {
+            saveBooksInOrder(node.getLeft(), writer);
+
+            Book book = node.getData();
+            String line = String.format("%s,%s,%s,%d,%s",
+                    book.getIdBook(),
+                    book.getTitle(),
+                    book.getAuthor(),
+                    book.getYear(),
+                    book.getCategory());
+            writer.write(line);
+            writer.newLine();
+
+            saveBooksInOrder(node.getRight(), writer);
+        }
+    }
+
+
     public boolean updateReader(String username, String newName, String newPassword) {
         HashMap<String, Reader> readers = loadReaders();
         if (!readers.containsKey(username.trim())) {
@@ -629,6 +748,46 @@ public class Persistence {
         books.put("008", book8);
         books.put("009", book9);
         books.put("010", book10);
+
+        System.out.println("✅ Libros por defecto disponibles:");
+        System.out.println("   - 001: El Quijote");
+        System.out.println("   - 002: Cien Años de Soledad");
+        System.out.println("   - 003: Orgullo y Prejuicio");
+        System.out.println("   - 004: 1984");
+        System.out.println("   - 005: Harry Potter y la Piedra Filosofal");
+        System.out.println("   - 006: El Señor de los Anillos");
+        System.out.println("   - 007: Crimen y Castigo");
+        System.out.println("   - 008: La Odisea");
+        System.out.println("   - 009: Don Juan Tenorio");
+        System.out.println("   - 010: Rayuela");
+    }
+
+    /*
+    Mismos datos  del hashmat solo que guaradados en el arbol
+     */
+
+    private void createDefaultBooksTree(BinarySearchTree< Book> books) {
+        Book book1 = new Book("001", "El Quijote", "Miguel de Cervantes", 1605, "Clásico");
+        Book book2 = new Book("002", "Cien Años de Soledad", "Gabriel García Márquez", 1967, "Realismo Mágico");
+        Book book3 = new Book("003", "Orgullo y Prejuicio", "Jane Austen", 1813, "Romance Época");
+        Book book4 = new Book("004", "1984", "George Orwell", 1949, "Distopía");
+        Book book5 = new Book("005", "Harry Potter y la Piedra Filosofal", "J.K. Rowling", 1997, "Fantasía");
+        Book book6 = new Book("006", "El Señor de los Anillos", "J.R.R. Tolkien", 1954, "Fantasía");
+        Book book7 = new Book("007", "Crimen y Castigo", "Fiódor Dostoyevski", 1866, "Clásico");
+        Book book8 = new Book("008", "La Odisea", "Homero", -800, "Épica");
+        Book book9 = new Book("009", "Don Juan Tenorio", "José Zorrilla", 1844, "Teatro");
+        Book book10 = new Book("010", "Rayuela", "Julio Cortázar", 1963, "Literatura Experimental");
+
+        books.insert(book1);
+        books.insert(book2);
+        books.insert(book3);
+        books.insert(book4);
+        books.insert(book5);
+        books.insert(book6);
+        books.insert(book7);
+        books.insert(book8);
+        books.insert(book9);
+        books.insert(book10);
 
         System.out.println("✅ Libros por defecto disponibles:");
         System.out.println("   - 001: El Quijote");

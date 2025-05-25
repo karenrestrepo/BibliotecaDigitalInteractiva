@@ -2,22 +2,23 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+
 import javafx.scene.control.*;
-import javafx.stage.Stage;
+
 
 public class HomeController {
 
@@ -25,75 +26,108 @@ public class HomeController {
     private ObservableList<Book> listBooks = FXCollections.observableArrayList();
 
     @FXML
-    private ResourceBundle resources;
-
-    @FXML
-    private URL location;
-
-    @FXML
-    private Button btnRequestBook;
-
-    @FXML
     private TableView<Book> tbBooks;
 
     @FXML
-    private TableColumn<Book, String> tcAuthor;
-
-    @FXML
-    private TableColumn<Book, String> tcCategory;
-
-    @FXML
-    private TableColumn<Book, String> tcRating;
-
-    @FXML
-    private TableColumn<Book, String> tcStatus;
-
-    @FXML
-    private TableColumn<Book, String> tcTitle;
-
-    @FXML
-    private TableColumn<Book, String> tcYear;
+    private TableColumn<Book, String> tcAuthor, tcCategory, tcRating, tcStatus, tcTitle, tcYear;
 
     @FXML
     private TextField txtSearchBook;
 
     @FXML
+    private Button btnRequestBook;
+
+    @FXML
+    void initialize() throws IOException {
+        library = LibraryUtil.initializeData();
+        initTable();
+        loadBooksOrderedByTitle(); // Carga inicial
+        setupLiveSearch();         // Búsqueda en tiempo real
+    }
+
+    private void initTable() {
+        tcTitle.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getTitle()));
+        tcAuthor.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getAuthor()));
+        tcCategory.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCategory()));
+        tcYear.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().getYear())));
+        tcStatus.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatus().name()));
+        tcRating.setCellValueFactory(data -> new SimpleStringProperty(String.valueOf(data.getValue().getAverageRating())));
+
+        tbBooks.setItems(listBooks);
+    }
+
+    private void loadBooksOrderedByTitle() {
+        listBooks.clear();
+        List<Book> books = library.getTitleTree().obtenerListainOrder();
+        listBooks.addAll(books);
+    }
+
+    private void loadBooksOrderedByAuthor() {
+        listBooks.clear();
+        listBooks.addAll(library.getAuthorTree().obtenerListainOrder());
+    }
+
+    private void loadBooksOrderedByCategory() {
+        listBooks.clear();
+        listBooks.addAll(library.getCategoryTree().obtenerListainOrder());
+    }
+
+    /// hace un abusqueda en vivo
+    private void setupLiveSearch() {
+        txtSearchBook.textProperty().addListener((obs, oldText, newText) -> {
+            if (newText == null || newText.isBlank()) {
+                loadBooksOrderedByTitle();
+                return;
+            }
+
+            List<Book> result = new ArrayList<>();
+
+            // Búsqueda parcial por título
+            List<Book> byTitle = library.getTitleTree().searchPartialMatches(newText.toLowerCase(), Book::getTitle);
+            result.addAll(byTitle);
+
+            // Búsqueda parcial por autor (sin duplicados)
+            List<Book> byAuthor = library.getAuthorTree().searchPartialMatches(newText.toLowerCase(), Book::getAuthor);
+            for (Book b : byAuthor) {
+                if (!result.contains(b)) {
+                    result.add(b);
+                }
+            }
+
+            // Búsqueda parcial por categoría (sin duplicados)
+            List<Book> byCategory = library.getCategoryTree().searchPartialMatches(newText.toLowerCase(), Book::getCategory);
+            for (Book b : byCategory) {
+                if (!result.contains(b)) {
+                    result.add(b);
+                }
+            }
+
+            listBooks.setAll(result);
+        });
+    }
+
+
+
+
+    @FXML
     void onRequestBook(ActionEvent event) {
         String title = txtSearchBook.getText();
         if (!title.isEmpty()) {
-            requestBook(title);
+            requestBook(title.trim());
         } else {
             showAlert(Alert.AlertType.WARNING, "Campo vacío", "Por favor ingrese un título para buscar.");
         }
     }
 
-
-    @FXML
-    void initialize() throws IOException {
-        library = LibraryUtil.initializeData();
-        initDataBuilding();
-    }
-
-    private void initDataBuilding() {
-        initializeTable();
-    }
-
-    private void initializeTable() {
-        listBooks.addAll(library.getBookssList().stream().toList());
-        tbBooks.setItems(listBooks);
-    }
-
-    // Reemplazar el método requestBook en HomeController.java
-
     private void requestBook(String title) {
         try {
-            if (title == null || title.trim().isEmpty()) {
+            if (title.isBlank()) {
                 showAlert(Alert.AlertType.WARNING, "Título vacío",
                         "Por favor ingrese un título válido para buscar.");
                 return;
             }
 
-            Book book = Reader.getBookByTitle(title.trim(), library);
+            Book book = library.getTitleTree().searchObject(new Book(title));
 
             if (book == null) {
                 showAlert(Alert.AlertType.INFORMATION, "Libro no encontrado",
@@ -111,39 +145,27 @@ public class HomeController {
 
             Person currentUser = Persistence.getCurrentUser();
 
-            if (currentUser == null) {
-                showAlert(Alert.AlertType.ERROR, "Error de sesión",
-                        "No hay una sesión activa. Por favor inicie sesión nuevamente.");
-                return;
-            }
-
-            if (!(currentUser instanceof Reader)) {
-                showAlert(Alert.AlertType.ERROR, "Permisos insuficientes",
-                        "Solo los lectores pueden solicitar préstamos de libros.");
+            if (currentUser == null || !(currentUser instanceof Reader)) {
+                showAlert(Alert.AlertType.ERROR, "Sesión inválida",
+                        "Debe iniciar sesión como lector para solicitar préstamos.");
                 return;
             }
 
             Reader reader = (Reader) currentUser;
 
-            boolean loanSuccess = reader.requestLoan(book);
-
-            if (loanSuccess) {
+            if (reader.requestLoan(book)) {
                 tbBooks.refresh();
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
-                        "¡Felicitaciones! Has obtenido el préstamo de \"" + book.getTitle() + "\".\n" +
-                                "Recuerda devolverlo a tiempo y no olvides valorarlo cuando termines de leerlo.");
+                        "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!");
                 txtSearchBook.clear();
             } else {
-                showAlert(Alert.AlertType.ERROR, "Error en el préstamo",
-                        "No se pudo procesar el préstamo. Es posible que ya tengas este libro o " +
-                                "hayas alcanzado el límite de préstamos simultáneos.");
+                showAlert(Alert.AlertType.ERROR, "Error de préstamo",
+                        "Ya tienes este libro o alcanzaste el límite de préstamos.");
             }
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error del sistema",
-                    "Ocurrió un error inesperado: " + e.getMessage() + "\n" +
-                            "Por favor contacta al administrador del sistema.");
-            System.err.println("Error en requestBook: " + e.getMessage());
+                    "Ocurrió un error inesperado: " + e.getMessage());
             e.printStackTrace();
         }
     }

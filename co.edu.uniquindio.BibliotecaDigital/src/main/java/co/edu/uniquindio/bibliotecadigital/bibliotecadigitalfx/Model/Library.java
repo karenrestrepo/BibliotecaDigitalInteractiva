@@ -1,11 +1,16 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.AuthorComparator;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.CategoryComparator;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.TitleComparator;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.BinarySearchTree;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 import java.io.File;
+import java.util.Comparator;
 
 public class Library {
     private static Library instance;
@@ -14,6 +19,10 @@ public class Library {
     // UNIFICADO: Una sola fuente de verdad para cada tipo de dato
     private HashMap<String, Reader> readers = new HashMap<>();
     private HashMap<String, Book> books = new HashMap<>();
+    private BinarySearchTree<Book> titleTree = new BinarySearchTree<>(new TitleComparator());
+    private BinarySearchTree<Book> authorTree = new BinarySearchTree<>(new AuthorComparator());
+    private BinarySearchTree<Book> categoryTree = new BinarySearchTree<>(new CategoryComparator());
+
     private HashMap<String, Administrator> administrators = new HashMap<>();
     private HashMap<String, Rating> ratings = new HashMap<>();
     private Graph<String> readerConnections = new Graph<>();
@@ -50,6 +59,10 @@ public class Library {
         try {
             readers = persistence.loadReaders();
             books = persistence.loadBooks();
+            titleTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getTitle().toLowerCase()));
+            authorTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getAuthor().toLowerCase()));
+            categoryTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getCategory().toLowerCase()));
+
             administrators = persistence.loadAdministrators();
 
             // SOLUCIÓN: Establecer referencia DESPUÉS de que instance esté asignada
@@ -106,16 +119,27 @@ public class Library {
         Book newBook = new Book(id.trim(), title.trim(), author.trim(), year,
                 category != null ? category.trim() : "");
 
+
         books.put(id, newBook);
+        titleTree.insert(newBook);    // árbol que ordena por título
+        authorTree.insert(newBook);   // árbol que ordena por autor
+        categoryTree.insert(newBook); // árbol que ordena por categoría
+
 
         // Persistir cambios de forma segura
         try {
             if (persistence != null && !persistence.saveBook(newBook)) {
                 books.remove(id); // Rollback si falla la persistencia
+                titleTree.delete(newBook);
+                authorTree.delete(newBook);
+                categoryTree.delete(newBook);
                 throw new RuntimeException("Failed to save book to persistence");
             }
         } catch (Exception e) {
             books.remove(id); // Rollback
+            titleTree.delete(newBook);
+            authorTree.delete(newBook);
+            categoryTree.delete(newBook);
             System.err.println("Warning: Could not persist book, but keeping in memory: " + e.getMessage());
         }
 
@@ -134,11 +158,18 @@ public class Library {
         }
 
         books.remove(id);
+        titleTree.delete(book);
+        authorTree.delete(book);
+        categoryTree.delete(book);
 
         // Guardar cambios en persistencia de forma segura
         try {
             if (persistence != null && !persistence.saveAllBooks(books)) {
                 books.put(id, book); // Rollback si falla
+                titleTree.insert(book);
+                authorTree.insert(book);
+                categoryTree.insert(book);
+
                 return false;
             }
         } catch (Exception e) {
@@ -322,10 +353,26 @@ public class Library {
                 Reader reader = readers.get(readerKeys.getAmountNodo(i));
                 reader.setLibrary(this);
             }
+
+            // LIMPIAR los árboles antes de volver a insertar
+            titleTree.clear();
+            authorTree.clear();
+            categoryTree.clear();
+
+            // REINSERTAR los libros en los árboles
+            LinkedList<String> bookKeys = books.keySet();
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                Book b = books.get(bookKeys.getAmountNodo(i));
+                titleTree.insert(b);
+                authorTree.insert(b);
+                categoryTree.insert(b);
+            }
+
         } catch (Exception e) {
             System.err.println("Error refreshing data: " + e.getMessage());
         }
     }
+
 
     // CORREGIDO: Método para agregar valoración
     public boolean addRating(Rating rating) {
@@ -416,5 +463,18 @@ public class Library {
     public String getLibraryStats() {
         return String.format("Biblioteca - Lectores: %d, Libros: %d, Administradores: %d, Valoraciones: %d",
                 readers.size(), books.size(), administrators.size(), ratings.size());
+    }
+
+
+    public BinarySearchTree<Book> getAuthorTree() {
+        return authorTree;
+    }
+
+    public BinarySearchTree<Book> getCategoryTree() {
+        return categoryTree;
+    }
+
+    public BinarySearchTree<Book> getTitleTree() {
+        return titleTree;
     }
 }

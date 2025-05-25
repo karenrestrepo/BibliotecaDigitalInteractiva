@@ -27,6 +27,12 @@ public class Book {
 
     public Book(){}
 
+    public Book(String title) {
+        this.title = title;
+        this.author = "";
+        this.category = "";
+    }
+
     public String getIdBook() {
         return idBook;
     }
@@ -85,4 +91,6 @@ public class Book {
                 " | Rating: " + String.format("%.2f", averageRating) +
                 " | Status: " + status;
     }
+
+
 }
