@@ -31,6 +31,7 @@ public class Library {
     public Library() {
         // SOLUCIÓN: Asignar instance ANTES de cargar datos
         persistence = new Persistence();
+
         // NO llamamos loadDataFromPersistence aquí para evitar el ciclo
     }
 

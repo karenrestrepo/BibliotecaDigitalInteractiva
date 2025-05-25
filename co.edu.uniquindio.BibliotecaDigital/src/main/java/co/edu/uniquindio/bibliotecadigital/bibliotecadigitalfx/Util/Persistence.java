@@ -19,10 +19,9 @@ public class Persistence {
 
     // CONFIGURACIÓN DE RUTAS - Problema original identificado
     private static final String RESOURCES_PACKAGE = "Archivos/";
-    private static final String DEV_BASE_PATH = "co.edu.uniquindio.BibliotecaDigital/src/main/resources/Archivos/";
-
-    // Rutas específicas para cada tipo de archivo
+    private static final String DEV_BASE_PATH = "src/main/resources/Archivos/";
     private static final String READERS_PATH = "Readers/Readers.txt";
+
     private static final String ADMINS_PATH = "Administrators/Administrators.txt";
     private static final String BOOKS_PATH = "Books/Books.txt";
     private static final String RATINGS_PATH = "Ratings/Ratings.txt";
@@ -89,13 +88,19 @@ public class Persistence {
      * Este patrón es reutilizable para todos los tipos de archivo
      */
     private BufferedReader getFileReader(String relativePath) throws IOException {
+        System.out.println("🔍 Intentando leer el archivo: " + relativePath);
+        System.out.println("📂 Rutas posibles:");
+        System.out.println("1️⃣ Classpath: " + RESOURCES_PACKAGE + relativePath);
+        System.out.println("2️⃣ Filesystem: " + DEV_BASE_PATH + relativePath);
+        System.out.println("3️⃣ Alternativa: src/main/resources/Archivos/" + relativePath);
+
         // ESTRATEGIA 1: Intentar leer desde classpath (para JAR/producción)
         try {
             InputStream classPathStream = getClass().getClassLoader()
                     .getResourceAsStream(RESOURCES_PACKAGE + relativePath);
 
             if (classPathStream != null) {
-                System.out.println("📖 Leyendo " + relativePath + " desde classpath");
+                System.out.println("✅ Leyendo " + relativePath + " desde classpath");
                 return new BufferedReader(new InputStreamReader(classPathStream));
             }
         } catch (Exception e) {
@@ -106,7 +111,7 @@ public class Persistence {
         try {
             Path filesystemPath = Paths.get(DEV_BASE_PATH + relativePath);
             if (Files.exists(filesystemPath)) {
-                System.out.println("📖 Leyendo " + relativePath + " desde filesystem");
+                System.out.println("✅ Leyendo " + relativePath + " desde filesystem");
                 return Files.newBufferedReader(filesystemPath);
             }
         } catch (Exception e) {
@@ -117,15 +122,16 @@ public class Persistence {
         try {
             Path altPath = Paths.get("src/main/resources/Archivos/" + relativePath);
             if (Files.exists(altPath)) {
-                System.out.println("📖 Leyendo " + relativePath + " desde directorio alternativo");
+                System.out.println("✅ Leyendo " + relativePath + " desde directorio alternativo");
                 return Files.newBufferedReader(altPath);
             }
         } catch (Exception e) {
             System.out.println("⚠️ No se pudo leer desde directorio alternativo: " + e.getMessage());
         }
 
-        throw new IOException("No se puede encontrar " + relativePath + " en ninguna ubicación");
+        throw new IOException("❌ No se puede encontrar " + relativePath + " en ninguna ubicación");
     }
+
 
     public HashMap<String, Administrator> loadAdministrators() {
         HashMap<String, Administrator> admins = new HashMap<>();
@@ -666,31 +672,30 @@ public class Persistence {
             Path filePath = Paths.get(DEV_BASE_PATH + READERS_PATH);
 
             try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+                // Escribir encabezado (comentario)
                 writer.write("# Archivo de lectores - Nombre,Usuario,Contraseña");
                 writer.newLine();
 
-                LinkedList<String> keys = readers.keySet();
-                for (int i = 0; i < keys.getSize(); i++) {
-                    String key = keys.getAmountNodo(i);
-                    Reader reader = readers.get(key);
-                    if (reader != null) {
-                        String line = String.format("%s,%s,%s",
-                                reader.getName(),
-                                reader.getUsername(),
-                                reader.getPassword());
-                        writer.write(line);
-                        writer.newLine();
-                    }
+                // Recorrer todos los lectores y escribirlos
+                for (Reader reader : readers.values()) {
+                    String line = String.format("%s,%s,%s",
+                            reader.getName(),
+                            reader.getUsername(),
+                            reader.getPassword());
+                    writer.write(line);
+                    writer.newLine();
                 }
-
-                System.out.println("💾 Guardados " + keys.getSize() + " lectores");
-                return true;
             }
+
+            System.out.println("💾 Todos los lectores han sido guardados correctamente.");
+            return true;
+
         } catch (IOException e) {
             System.err.println("❌ Error guardando todos los lectores: " + e.getMessage());
             return false;
         }
     }
+
 
     /**
      * MÉTODOS PARA DATOS POR DEFECTO
