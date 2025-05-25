@@ -2,10 +2,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
@@ -23,6 +20,7 @@ import javafx.scene.control.*;
 public class HomeController {
 
     private Library library;
+    Book selectedBook;
     private ObservableList<Book> listBooks = FXCollections.observableArrayList();
 
     @FXML
@@ -40,6 +38,7 @@ public class HomeController {
     @FXML
     void initialize() throws IOException {
         library = LibraryUtil.initializeData();
+        listenerSelection();
         initTable();
         loadBooksOrderedByTitle(); // Carga inicial
         setupLiveSearch();         // Búsqueda en tiempo real
@@ -80,31 +79,22 @@ public class HomeController {
                 return;
             }
 
-            List<Book> result = new ArrayList<>();
+            Set<Book> result = new LinkedHashSet<>();
 
             // Búsqueda parcial por título
-            List<Book> byTitle = library.getTitleTree().searchPartialMatches(newText.toLowerCase(), Book::getTitle);
-            result.addAll(byTitle);
+            result.addAll(library.getTitleTree().searchPartialMatches(newText.toLowerCase(), Book::getTitle));
 
-            // Búsqueda parcial por autor (sin duplicados)
-            List<Book> byAuthor = library.getAuthorTree().searchPartialMatches(newText.toLowerCase(), Book::getAuthor);
-            for (Book b : byAuthor) {
-                if (!result.contains(b)) {
-                    result.add(b);
-                }
-            }
+            // Búsqueda parcial por autor
+            result.addAll(library.getAuthorTree().searchPartialMatches(newText.toLowerCase(), Book::getAuthor));
 
-            // Búsqueda parcial por categoría (sin duplicados)
-            List<Book> byCategory = library.getCategoryTree().searchPartialMatches(newText.toLowerCase(), Book::getCategory);
-            for (Book b : byCategory) {
-                if (!result.contains(b)) {
-                    result.add(b);
-                }
-            }
+            // Búsqueda parcial por categoría
+            result.addAll(library.getCategoryTree().searchPartialMatches(newText.toLowerCase(), Book::getCategory));
 
+            listBooks.clear(); // <- limpia la lista antes de actualizarla
             listBooks.setAll(result);
         });
     }
+
 
 
 
@@ -167,6 +157,18 @@ public class HomeController {
             showAlert(Alert.AlertType.ERROR, "Error del sistema",
                     "Ocurrió un error inesperado: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    private void listenerSelection() {
+        tbBooks.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            selectedBook = newSelection;
+            showUserInformation(selectedBook);
+        });
+    }
+
+    private void showUserInformation(Book selectedBook) {
+        if (this.selectedBook != null) {
+            txtSearchBook.setText(selectedBook.getTitle());
         }
     }
 
