@@ -8,9 +8,9 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="675.0" prefWidth="602.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController">
+<AnchorPane prefHeight="632.0" prefWidth="602.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController">
    <children>
-      <SplitPane dividerPositions="0.4212121212121212" layoutX="4.0" layoutY="7.0" orientation="VERTICAL" prefHeight="662.0" prefWidth="594.0">
+      <SplitPane dividerPositions="0.432258064516129" layoutX="4.0" layoutY="7.0" orientation="VERTICAL" prefHeight="622.0" prefWidth="594.0">
          <items>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="250.0" prefWidth="865.0">
                <children>
@@ -33,7 +33,7 @@
             </AnchorPane>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="282.0" prefWidth="865.0">
                <children>
-                  <TableView fx:id="tableBook" layoutX="3.0" layoutY="65.0" prefHeight="249.0" prefWidth="586.0">
+                  <TableView fx:id="tableBook" layoutX="3.0" layoutY="65.0" prefHeight="209.0" prefWidth="586.0">
                      <columns>
                         <TableColumn fx:id="tcId" prefWidth="40.0" text="Id" />
                         <TableColumn fx:id="tcTitle" prefWidth="177.0" text="Título" />
@@ -44,7 +44,7 @@
                         <TableColumn fx:id="tcRating" prefWidth="74.0" text="Calificación" />
                      </columns>
                   </TableView>
-                  <Button fx:id="btnEliminar" layoutX="253.0" layoutY="336.0" mnemonicParsing="false" onAction="#onDelete" prefHeight="25.0" prefWidth="88.0" text="Eliminar libro" />
+                  <Button fx:id="btnEliminar" layoutX="240.0" layoutY="305.0" mnemonicParsing="false" onAction="#onDelete" prefHeight="25.0" prefWidth="88.0" text="Eliminar libro" />
                   <TextField fx:id="txtFiltrarLibro" layoutX="94.0" layoutY="23.0" prefHeight="25.0" prefWidth="380.0" />
                   <Label layoutX="29.0" layoutY="27.0" text="Filtrar por:" />
                </children>

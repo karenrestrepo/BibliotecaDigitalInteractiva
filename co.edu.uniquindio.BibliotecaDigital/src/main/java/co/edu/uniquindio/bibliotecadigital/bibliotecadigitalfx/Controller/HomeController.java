@@ -189,6 +189,7 @@ public class HomeController {
     private void showUserInformation(Book selectedBook) {
         if (this.selectedBook != null) {
             txtSearchBook.setText(selectedBook.getTitle());
+
         }
     }
     public void setMyLoansController(MyLoansController myLoansController) {

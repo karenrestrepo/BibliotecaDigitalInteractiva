@@ -2,7 +2,10 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
@@ -94,6 +97,7 @@ public class ManageBooksController {
             library = Library.getInstance();
 
             initView();
+            setupLiveSearch();
 
             System.out.println("ManageBooksController inicializado correctamente");
 
@@ -215,23 +219,40 @@ public class ManageBooksController {
 
     private void initView() {
         initDataBinding();
-        updateTableView();
         listenerSelection();
+        updateTableView();
+
     }
 
 
     private void updateTableView() {
         tableBook.getItems().clear();
-
-        // Obtener todos los libros desde el HashMap
-        LinkedList<Book> bookList = library.getBooks().values();
-        for (Book book : bookList) {
-            tableBook.getItems().add(book);
-        }
+        List<Book> books = library.getTitleTree().obtenerListainOrder(); // o getAuthorTree() o getCategoryTree()
+        tableBook.getItems().addAll(books);
     }
 
+    private void setupLiveSearch() {
+        txtFiltrarLibro.textProperty().addListener((obs, oldText, newText) -> {
+            if (newText == null || newText.isBlank()) {
+                updateTableView(); // vuelve a cargar todo ordenado por título
+                return;
+            }
 
+            Set<Book> result = new LinkedHashSet<>();
 
+            // Búsqueda parcial por título
+            result.addAll(library.getTitleTree().searchPartialMatches(newText.toLowerCase(), Book::getTitle));
+
+            // Búsqueda parcial por autor
+            result.addAll(library.getAuthorTree().searchPartialMatches(newText.toLowerCase(), Book::getAuthor));
+
+            // Búsqueda parcial por categoría
+            result.addAll(library.getCategoryTree().searchPartialMatches(newText.toLowerCase(), Book::getCategory));
+
+            tableBook.getItems().clear();
+            tableBook.getItems().addAll(result);
+        });
+    }
 
 
     private void listenerSelection() {

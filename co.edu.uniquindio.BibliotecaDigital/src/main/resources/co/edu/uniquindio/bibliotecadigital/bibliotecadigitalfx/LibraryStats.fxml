@@ -71,7 +71,7 @@
                </font>
             </Label>
             <ListView fx:id="tvClusters" layoutX="29.0" layoutY="614.0" prefHeight="96.0" prefWidth="551.0" />
-            <Button layoutX="440.0" layoutY="13.0" mnemonicParsing="false" onAction="#onActualizar" text="Actualizar Estadisticas:" />
+            <Button layoutX="470.0" layoutY="13.0" mnemonicParsing="false" onAction="#onActualizar" text="Actualizar Datos" />
          </children>
       </Pane>
    </children>
