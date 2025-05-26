@@ -81,12 +81,7 @@ public class MyLoansController {
 
     @FXML
     void initialize() {
-        assert tbLoans != null : "fx:id=\"tbLoans\" was not injected: check your FXML file 'MyLoans.fxml'.";
-        assert tcTitle != null : "fx:id=\"tcTitle\" was not injected: check your FXML file 'MyLoans.fxml'.";
-        assert tcAuthor != null : "fx:id=\"tcAuthor\" was not injected: check your FXML file 'MyLoans.fxml'.";
-        assert tcCategory != null : "fx:id=\"tcCategory\" was not injected: check your FXML file 'MyLoans.fxml'.";
-        assert tcStatus != null : "fx:id=\"tcStatus\" was not injected: check your FXML file 'MyLoans.fxml'.";
-        assert tcReturn != null : "fx:id=\"tcReturn\" was not injected: check your FXML file 'MyLoans.fxml'.";
+
 
         initializeUserData();
         setupTableColumns();

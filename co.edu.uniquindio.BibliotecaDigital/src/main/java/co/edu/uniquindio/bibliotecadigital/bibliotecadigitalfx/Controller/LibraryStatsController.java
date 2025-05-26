@@ -61,6 +61,42 @@ public class LibraryStatsController {
     /// ayuda actulizar la stablas y los combo box sin tener que salir y volver a entrar
 
     @FXML
+    void onSearch(ActionEvent event) {
+        Reader readerA = cbReaderA.getValue();
+        Reader readerB = cbReaderB.getValue();
+
+        if (readerA == null || readerB == null) {
+            lblCamino.setText("Selecciona dos lectores válidos.");
+            return;
+        }
+
+        if (readerA.equals(readerB)) {
+            lblCamino.setText("Los lectores seleccionados son el mismo.");
+            return;
+        }
+
+        // Encontrar camino más corto usando BFS
+        LinkedList<Reader> path = affinitySystem.getShortestPath(readerA, readerB);
+
+        if (path.getSize() == 0) {
+            lblCamino.setText("No existe conexión entre " + readerA.getName() +
+                    " y " + readerB.getName() + ".\nEstán en diferentes clústeres de afinidad.");
+        } else {
+            StringBuilder pathDescription = new StringBuilder();
+            pathDescription.append("Camino encontrado (").append(path.getSize()).append(" pasos):\n\n");
+
+            for (int i = 0; i < path.getSize(); i++) {
+                pathDescription.append((i + 1)).append(". ").append(path.getAmountNodo(i).getName());
+                if (i < path.getSize() - 1) {
+                    pathDescription.append("\n   ↓ (conectados por gustos similares)\n");
+                }
+            }
+
+            lblCamino.setText(pathDescription.toString());
+        }
+
+    }
+    @FXML
     void onActualizar(ActionEvent event) {
         setupComboBoxes();
         loadAllStatistics();
@@ -313,41 +349,7 @@ public class LibraryStatsController {
      *
      * Aplicación práctica del algoritmo BFS (Breadth-First Search)
      */
-    @FXML
-    void onSearchPath(ActionEvent event) {
-        Reader readerA = cbReaderA.getValue();
-        Reader readerB = cbReaderB.getValue();
 
-        if (readerA == null || readerB == null) {
-            lblCamino.setText("Selecciona dos lectores válidos.");
-            return;
-        }
-
-        if (readerA.equals(readerB)) {
-            lblCamino.setText("Los lectores seleccionados son el mismo.");
-            return;
-        }
-
-        // Encontrar camino más corto usando BFS
-        LinkedList<Reader> path = affinitySystem.getShortestPath(readerA, readerB);
-
-        if (path.getSize() == 0) {
-            lblCamino.setText("No existe conexión entre " + readerA.getName() +
-                    " y " + readerB.getName() + ".\nEstán en diferentes clústeres de afinidad.");
-        } else {
-            StringBuilder pathDescription = new StringBuilder();
-            pathDescription.append("Camino encontrado (").append(path.getSize()).append(" pasos):\n\n");
-
-            for (int i = 0; i < path.getSize(); i++) {
-                pathDescription.append((i + 1)).append(". ").append(path.getAmountNodo(i).getName());
-                if (i < path.getSize() - 1) {
-                    pathDescription.append("\n   ↓ (conectados por gustos similares)\n");
-                }
-            }
-
-            lblCamino.setText(pathDescription.toString());
-        }
-    }
 
     // ================== ALGORITMOS DE ORDENAMIENTO ==================
     // Nota pedagógica: Implementamos nuestros propios algoritmos para entender

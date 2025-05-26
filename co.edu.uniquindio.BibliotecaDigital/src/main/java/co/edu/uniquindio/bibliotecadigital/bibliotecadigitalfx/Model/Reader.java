@@ -4,13 +4,17 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinitySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.PriorityQueue;
 
 /**
  * Clase Reader mejorada con sistema completo de recomendaciones,
  * valoraciones y gestión de afinidad
  */
 public class Reader extends Person {
+
+
     private LinkedList<Book> loanHistoryList;
     private LinkedList<Rating> ratingsList;
     private LinkedList<String> messages; // Mensajes recibidos
@@ -22,6 +26,7 @@ public class Reader extends Person {
         this.ratingsList = new LinkedList<>();
         this.messages = new LinkedList<>();
         this.library = library;
+
     }
 
     public Reader() {
@@ -360,6 +365,9 @@ public class Reader extends Person {
 
 
     // =============== GETTERS Y SETTERS ===============
+
+
+
 
     public LinkedList<Book> getLoanHistoryList() {
         return loanHistoryList;

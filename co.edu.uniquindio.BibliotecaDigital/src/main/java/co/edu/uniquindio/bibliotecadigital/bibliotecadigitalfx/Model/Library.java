@@ -3,10 +3,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.AuthorComparator;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.CategoryComparator;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.TitleComparator;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.BinarySearchTree;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Graph;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 import java.io.File;
@@ -22,6 +19,8 @@ public class Library {
     private BinarySearchTree<Book> titleTree = new BinarySearchTree<>(new TitleComparator());
     private BinarySearchTree<Book> authorTree = new BinarySearchTree<>(new AuthorComparator());
     private BinarySearchTree<Book> categoryTree = new BinarySearchTree<>(new CategoryComparator());
+    private PriorityQueue<Book> booksOnHold = new PriorityQueue<>();
+    private HashMap<String, Book> loanBooks = new HashMap<>();
 
     private HashMap<String, Administrator> administrators = new HashMap<>();
     private HashMap<String, Rating> ratings = new HashMap<>();
@@ -477,5 +476,13 @@ public class Library {
 
     public BinarySearchTree<Book> getTitleTree() {
         return titleTree;
+    }
+
+    public PriorityQueue<Book> getBooksOnHold() {
+        return booksOnHold;
+    }
+
+    public HashMap<String, Book> getLoanBooks() {
+        return loanBooks;
     }
 }

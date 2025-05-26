@@ -63,7 +63,7 @@
             </Label>
             <ComboBox fx:id="cbReaderA" layoutX="28.0" layoutY="459.0" prefWidth="150.0" />
             <ComboBox fx:id="cbReaderB" layoutX="28.0" layoutY="493.0" prefWidth="150.0" />
-            <Button fx:id="btnSearch" layoutX="57.0" layoutY="525.0" mnemonicParsing="false" text="Buscar camino" />
+            <Button fx:id="btnSearch" layoutX="57.0" layoutY="525.0" mnemonicParsing="false" onAction="#onSearch" text="Buscar camino" />
             <TextArea fx:id="lblCamino" layoutX="227.0" layoutY="461.0" prefHeight="87.0" prefWidth="355.0" />
             <Label layoutX="23.0" layoutY="586.0" text="Clústeres de afinidad  ">
                <font>
