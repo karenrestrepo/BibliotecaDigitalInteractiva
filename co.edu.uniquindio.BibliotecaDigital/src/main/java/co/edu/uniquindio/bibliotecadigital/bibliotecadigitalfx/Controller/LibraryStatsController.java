@@ -58,6 +58,14 @@ public class LibraryStatsController {
     private Library library;
     private AffinitySystem affinitySystem;
 
+    /// ayuda actulizar la stablas y los combo box sin tener que salir y volver a entrar
+
+    @FXML
+    void onActualizar(ActionEvent event) {
+        setupComboBoxes();
+        loadAllStatistics();
+    }
+
     @FXML
     void initialize() {
         library = Library.getInstance();
@@ -168,7 +176,7 @@ public class LibraryStatsController {
      *
      * Aplicación directa de teoría de grafos: análisis de grado de vértices
      */
-    private void loadConnectionStatistics() {
+    private void loadConnectionStatistics(){
         LinkedList<Reader> readers = library.getReadersList();
         LinkedList<ConnectionStatistic> connectionStats = new LinkedList<>();
 

@@ -77,6 +77,6 @@
                 </Tab>
             </tabs>
         </TabPane>
-      <Label fx:id="AdminitratorIngreso" layoutX="32.0" layoutY="14.0" text="Label" />
+      <Label fx:id="AdminitratorIngreso" layoutX="19.0" layoutY="14.0" text="Label" />
     </children>
 </AnchorPane>

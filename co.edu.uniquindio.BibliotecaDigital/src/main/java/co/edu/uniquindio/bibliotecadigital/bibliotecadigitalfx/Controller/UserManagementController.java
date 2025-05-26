@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
@@ -16,6 +17,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
 public class UserManagementController {
+    Reader readerSelect;
     @FXML
     private ResourceBundle resources;
 
@@ -164,6 +166,7 @@ public class UserManagementController {
             setupTableSelection();
             setupFilterListener();
             loadReadersTable();
+            listenerSelection();
 
             System.out.println("UserManagementController inicializado correctamente");
 
@@ -265,6 +268,20 @@ public class UserManagementController {
             e.printStackTrace();
         }
     }
+    private void listenerSelection() {
+        tableReader.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            readerSelect = newSelection;
+            showUserInformation(readerSelect);
+        });
+    }
+
+    private void showUserInformation(Reader readerSelect) {
+        if (this.readerSelect != null) {
+            txtUser.setText(readerSelect.getName());
+
+        }
+    }
+
 
     private void clearFields() {
         txtName.clear();
