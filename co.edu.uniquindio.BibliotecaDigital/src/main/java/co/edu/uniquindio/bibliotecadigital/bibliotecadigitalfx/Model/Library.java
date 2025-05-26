@@ -373,7 +373,6 @@ public class Library {
         }
     }
 
-
     // CORREGIDO: Método para agregar valoración
     public boolean addRating(Rating rating) {
         if (rating == null || rating.getReader() == null || rating.getBook() == null) {
@@ -465,23 +464,27 @@ public class Library {
                 readers.size(), books.size(), administrators.size(), ratings.size());
     }
 
-
+    // Devuelve el árbol binario de búsqueda que organiza los libros por autor.
     public BinarySearchTree<Book> getAuthorTree() {
         return authorTree;
     }
 
+    // Devuelve el árbol binario de búsqueda que organiza los libros por categoría.
     public BinarySearchTree<Book> getCategoryTree() {
         return categoryTree;
     }
 
+    // Devuelve el árbol binario de búsqueda que organiza los libros por título.
     public BinarySearchTree<Book> getTitleTree() {
         return titleTree;
     }
 
+    // Devuelve la cola de prioridad que contiene los libros que están en espera (por ejemplo, solicitados por usuarios).
     public PriorityQueue<Book> getBooksOnHold() {
         return booksOnHold;
     }
 
+    // Devuelve un mapa hash que relaciona el ID del préstamo (o algún identificador) con el libro que está prestado.
     public HashMap<String, Book> getLoanBooks() {
         return loanBooks;
     }

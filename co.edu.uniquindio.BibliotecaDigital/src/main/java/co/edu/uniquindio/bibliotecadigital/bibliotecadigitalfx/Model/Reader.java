@@ -3,10 +3,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinitySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.PriorityQueue;
 
 /**
  * Clase Reader mejorada con sistema completo de recomendaciones,
@@ -181,7 +178,7 @@ public class Reader extends Person {
     /**
      * Obtiene sugerencias de amigos usando el sistema de afinidad
      */
-    public LinkedList<Reader> getSuggestions(LibrarySystem librarySystem) {
+    public LinkedList<Reader> getSuggestions(Library library) {
         if (library == null) {
             return new LinkedList<>();
         }

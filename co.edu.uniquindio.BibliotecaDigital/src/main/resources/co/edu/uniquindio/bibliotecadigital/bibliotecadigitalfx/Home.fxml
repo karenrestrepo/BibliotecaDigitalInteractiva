@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-
 
 <AnchorPane prefHeight="676.0" prefWidth="602.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.HomeController">
    <children>
       <Pane layoutX="5.0" layoutY="6.0" prefHeight="664.0" prefWidth="590.0">
          <children>
-            <TextField fx:id="txtSearchBook" layoutX="84.0" layoutY="60.0" prefHeight="25.0" prefWidth="482.0" />
-            <Label layoutX="226.0" layoutY="14.0" text="BIBLIOTECA DIGITAL">
+            <TextField fx:id="txtSearchBook" layoutX="86.0" layoutY="47.0" prefHeight="25.0" prefWidth="482.0" />
+            <Label layoutX="210.0" layoutY="3.0" text="BIBLIOTECA DIGITAL">
                <font>
-                  <Font name="System Bold Italic" size="14.0" />
+                  <Font name="Cambria Bold Italic" size="18.0" />
                </font>
             </Label>
-            <Label layoutX="20.0" layoutY="63.0" text="Buscar" />
-            <TableView fx:id="tbBooks" layoutX="22.0" layoutY="138.0" prefHeight="510.0" prefWidth="546.0">
+            <Label layoutX="30.0" layoutY="48.0" text="Buscar">
+               <font>
+                  <Font name="Cambria" size="16.0" />
+               </font></Label>
+            <TableView fx:id="tbBooks" layoutX="22.0" layoutY="117.0" prefHeight="521.0" prefWidth="546.0">
               <columns>
                 <TableColumn fx:id="tcTitle" prefWidth="129.0" text="Título" />
                 <TableColumn fx:id="tcAuthor" prefWidth="113.0" text="Autor" />
@@ -27,7 +29,10 @@
                   <TableColumn fx:id="tcRating" prefWidth="70.0" text="Calificación" />
               </columns>
             </TableView>
-            <Button fx:id="btnRequestBook" layoutX="239.0" layoutY="99.0" mnemonicParsing="false" onAction="#onRequestBook" text="Solicitar prestamo" />
+            <Button fx:id="btnRequestBook" layoutX="235.0" layoutY="81.0" mnemonicParsing="false" onAction="#onRequestBook" text="Solicitar prestamo">
+               <font>
+                  <Font name="Cambria" size="13.0" />
+               </font></Button>
             </children>
       </Pane>
    </children>

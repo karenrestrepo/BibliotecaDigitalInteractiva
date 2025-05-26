@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
@@ -7,20 +11,22 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane prefHeight="675.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.LoadDataController">
+<AnchorPane prefHeight="675.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.LoadDataController">
    <children>
       <Pane prefHeight="675.0" prefWidth="600.0">
          <children>
-            <Label layoutX="36.0" layoutY="28.0" prefHeight="20.0" prefWidth="349.0" text="Instrucciones para cargar archivos de prueba:">
+            <Label layoutX="36.0" layoutY="28.0" prefHeight="22.0" prefWidth="400.0" text="Instrucciones para cargar archivos de prueba:">
                <font>
-                  <Font name="System Bold Italic" size="14.0" />
+                  <Font name="Cambria Bold Italic" size="18.0" />
                </font>
             </Label>
-            <Button fx:id="btnLoadData" layoutX="244.0" layoutY="338.0" mnemonicParsing="false" onAction="#onLoadData" prefHeight="40.0" prefWidth="113.0" text="Cargar datos" />
+            <Button fx:id="btnLoadData" layoutX="244.0" layoutY="338.0" mnemonicParsing="false" onAction="#onLoadData" prefHeight="40.0" prefWidth="113.0" text="Cargar datos">
+               <font>
+                  <Font name="Cambria Bold" size="15.0" />
+               </font></Button>
             <TextArea layoutX="37.0" layoutY="66.0" prefHeight="238.0" prefWidth="528.0" text="- Lectores (lectores.txt)&#10;   Nombre,Correo,Contraseña&#10;&#10;- Libros (libros.txt)&#10;   Título,Autor,Año,Categoría&#10;&#10;- Valoraciones (valoraciones.txt)&#10;   CorreoLector,TítuloLibro,Puntaje&#10;&#10;- Conexiones entre lectores (conexiones.txt)&#10;   CorreoLector1,CorreoLector2">
                <font>
-                  <Font size="13.0" />
+                  <Font name="Cambria" size="14.0" />
                </font>
             </TextArea>
          </children>

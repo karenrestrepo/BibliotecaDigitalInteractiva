@@ -4,16 +4,12 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.LibrarySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.ListNode;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.Nodes.Node;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.fxml.FXML;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
-import javafx.scene.text.Text;
 
 import java.io.IOException;
 
@@ -94,8 +90,8 @@ public class ReaderController {
             }
 
             // Cargar las sugerencias de amigos (muestra sólo el username)
-            LibrarySystem librarySystem = getLibrarySystemFromLibrary(library);
-            ListNode currentSug = reader.getSuggestions(librarySystem).getFirstNode();
+
+            ListNode currentSug = reader.getSuggestions(library).getFirstNode();
             while (currentSug != null) {
                 Reader r = (Reader) currentSug.getAmountNodo();
                 friendsListView.getItems().add(r.getUsername());
@@ -107,10 +103,7 @@ public class ReaderController {
 
 
 
-    private LibrarySystem getLibrarySystemFromLibrary(Library library) {
-        // Lógica para obtener LibrarySystem desde Library
-        return new LibrarySystem(); // O alguna otra lógica que tengas
-    }
+
 
 
     @FXML
