@@ -153,20 +153,17 @@ public class HomeController {
 
             if (book == null) {
                 showAlert(Alert.AlertType.INFORMATION, "Libro no encontrado",
-                        "No se encontró ningún libro con el título \"" + title + "\".\n" +
-                                "Verifique la ortografía o intente con palabras clave.");
+                        "No se encontró ningún libro con el título \"" + title + "\".");
                 return;
             }
 
             if (book.getStatus() != BookStatus.AVAILABLE) {
                 showAlert(Alert.AlertType.WARNING, "Libro no disponible",
-                        "El libro \"" + book.getTitle() + "\" está actualmente prestado.\n" +
-                                "¿Le gustaría añadirlo a la lista de espera?");
+                        "El libro \"" + book.getTitle() + "\" está actualmente prestado.");
                 return;
             }
 
             Person currentUser = Persistence.getCurrentUser();
-
             if (currentUser == null || !(currentUser instanceof Reader)) {
                 showAlert(Alert.AlertType.ERROR, "Sesión inválida",
                         "Debe iniciar sesión como lector para solicitar préstamos.");
@@ -180,37 +177,28 @@ public class HomeController {
             // CORRECCIÓN: Usar el método mejorado de préstamo
             if (reader.requestLoan(book)) {
 
-                // CORRECCIÓN: Actualización inmediata y completa
                 System.out.println("✅ Préstamo exitoso, actualizando interfaces...");
 
-                // 1. Actualizar tabla de libros (estado cambió a prestado)
+                // 1. Actualizar tabla de libros INMEDIATAMENTE
                 refreshBooksTable();
 
-                // 2. Esperar un momento para que la persistencia se complete
-                Platform.runLater(() -> {
-                    try {
-                        // 3. Actualizar mis préstamos CON DELAY para asegurar persistencia
-                        if (myLoansController != null) {
-                            myLoansController.refreshLoans();
-                            System.out.println("✅ Tabla de préstamos actualizada");
-                        } else {
-                            System.err.println("⚠️ MyLoansController no disponible");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("❌ Error actualizando préstamos: " + e.getMessage());
-                    }
-                });
+                // 2. Actualizar tabla de préstamos INMEDIATAMENTE
+                if (myLoansController != null) {
+                    myLoansController.refreshLoans();
+                    System.out.println("✅ Tabla de préstamos actualizada");
+                } else {
+                    System.err.println("⚠️ MyLoansController no disponible");
+                }
 
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
                         "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!\n" +
-                                "Recuerda devolverlo en 14 días.\n\n" +
-                                "Ve a 'Panel personal > Mis préstamos' para ver todos tus préstamos.");
+                                "Recuerda devolverlo en 14 días.");
 
                 txtSearchBook.clear();
 
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error de préstamo",
-                        "No se pudo procesar el préstamo. Verifica que no tengas ya este libro.");
+                        "No se pudo procesar el préstamo.");
             }
 
         } catch (Exception e) {
@@ -221,19 +209,22 @@ public class HomeController {
     }
 
     /**
-     * MÉTODO MEJORADO: Refresca la tabla de libros desde persistencia
+     * CORREGIDO: Método para refrescar tabla de libros
      */
     public void refreshBooksTable() {
         try {
             System.out.println("🔄 Refrescando tabla de libros...");
 
-            // CORRECCIÓN: Recargar completamente desde persistencia
+            // Recargar completamente desde persistencia
             Persistence persistence = new Persistence();
-            co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap<String, Book> updatedBooks = persistence.loadBooks();
 
-            // CORRECCIÓN: Actualizar estados desde archivo de préstamos
+            // Cargar libros base
+            HashMap<String, Book> updatedBooks = persistence.loadBooks();
+
+            // Aplicar estados desde préstamos activos
             HashMap<String, Persistence.LoanRecord> activeLoans = persistence.loadActiveLoans();
             LinkedList<String> loanKeys = activeLoans.keySet();
+
             for (int i = 0; i < loanKeys.getSize(); i++) {
                 Persistence.LoanRecord loanRecord = activeLoans.get(loanKeys.getAmountNodo(i));
                 String bookId = loanRecord.getBook().getIdBook();
@@ -242,19 +233,19 @@ public class HomeController {
                 }
             }
 
-            // Actualizar el árbol de títulos de la biblioteca
+            // Actualizar estructuras de la biblioteca
+            library.getBooks().clear();
             library.getTitleTree().clear();
-            LinkedList<String> bookKeys = updatedBooks.keySet();
-            for (int i = 0; i < bookKeys.getSize(); i++) {
-                Book book = updatedBooks.get(bookKeys.getAmountNodo(i));
-                library.getTitleTree().insert(book);
-            }
-
-            // Actualizar otros árboles también
             library.getAuthorTree().clear();
             library.getCategoryTree().clear();
+
+            LinkedList<String> bookKeys = updatedBooks.keySet();
             for (int i = 0; i < bookKeys.getSize(); i++) {
-                Book book = updatedBooks.get(bookKeys.getAmountNodo(i));
+                String key = bookKeys.getAmountNodo(i);
+                Book book = updatedBooks.get(key);
+
+                library.getBooks().put(key, book);
+                library.getTitleTree().insert(book);
                 library.getAuthorTree().insert(book);
                 library.getCategoryTree().insert(book);
             }

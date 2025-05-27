@@ -1009,54 +1009,6 @@ public class Persistence {
     }
 
     /**
-     * Guarda un préstamo activo
-     */
-    public boolean saveLoan(Reader reader, Book book) {
-        if (reader == null || book == null) {
-            return false;
-        }
-
-        try (BufferedWriter writer = getFileWriter(LOANS_FILE, true)) {
-            // Formato: username,bookId,fechaPrestamo,fechaVencimiento
-            java.time.LocalDate fechaPrestamo = java.time.LocalDate.now();
-            java.time.LocalDate fechaVencimiento = fechaPrestamo.plusDays(14); // 14 días de préstamo
-
-            String line = String.format("%s,%s,%s,%s",
-                    reader.getUsername(),
-                    book.getIdBook(),
-                    fechaPrestamo.toString(),
-                    fechaVencimiento.toString());
-            writer.write(line);
-            writer.newLine();
-            writer.flush();
-
-            System.out.println("💾 Préstamo guardado: " + reader.getUsername() + " -> " + book.getTitle());
-            return true;
-
-        } catch (IOException e) {
-            System.err.println("❌ Error guardando préstamo: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Actualiza el estado de un libro en el archivo
-     */
-    public boolean updateBookStatus(String bookId, BookStatus newStatus) {
-        HashMap<String, Book> books = loadBooks();
-
-        if (!books.containsKey(bookId)) {
-            System.err.println("❌ Libro no encontrado para actualizar estado: " + bookId);
-            return false;
-        }
-
-        Book book = books.get(bookId);
-        book.setStatus(newStatus);
-
-        return saveAllBooks(books);
-    }
-
-    /**
      * Carga préstamos activos desde archivo
      */
     public HashMap<String, LoanRecord> loadActiveLoans() {
@@ -1328,6 +1280,81 @@ public class Persistence {
 
         } catch (IOException e) {
             System.err.println("❌ Error guardando administradores: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateBookStatus(String bookId, BookStatus newStatus) {
+        if (bookId == null || bookId.trim().isEmpty() || newStatus == null) {
+            System.err.println("❌ Parámetros inválidos para actualizar estado de libro");
+            return false;
+        }
+
+        try {
+            HashMap<String, Book> books = loadBooks();
+
+            if (!books.containsKey(bookId.trim())) {
+                System.err.println("❌ Libro no encontrado para actualizar estado: " + bookId);
+                return false;
+            }
+
+            // Actualizar estado en memoria
+            Book book = books.get(bookId.trim());
+            BookStatus oldStatus = book.getStatus();
+            book.setStatus(newStatus);
+
+            // Guardar todos los libros (reescribir archivo)
+            boolean saved = saveAllBooks(books);
+
+            if (saved) {
+                System.out.println("✅ Estado de libro actualizado: " + bookId +
+                        " (" + oldStatus + " → " + newStatus + ")");
+                return true;
+            } else {
+                // Rollback
+                book.setStatus(oldStatus);
+                System.err.println("❌ Error persistiendo estado de libro");
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando estado de libro: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean saveLoan(Reader reader, Book book) {
+        if (reader == null || book == null) {
+            return false;
+        }
+
+        // NUEVO: Verificar si ya existe el préstamo
+        HashMap<String, LoanRecord> existingLoans = loadActiveLoans();
+        String loanKey = reader.getUsername() + "|" + book.getIdBook();
+
+        if (existingLoans.containsKey(loanKey)) {
+            System.out.println("⚠️ El préstamo ya existe, no se duplicará: " + loanKey);
+            return true; // No es error, simplemente ya existe
+        }
+
+        try (BufferedWriter writer = getFileWriter(LOANS_FILE, true)) {
+            java.time.LocalDate fechaPrestamo = java.time.LocalDate.now();
+            java.time.LocalDate fechaVencimiento = fechaPrestamo.plusDays(14);
+
+            String line = String.format("%s,%s,%s,%s",
+                    reader.getUsername(),
+                    book.getIdBook(),
+                    fechaPrestamo.toString(),
+                    fechaVencimiento.toString());
+            writer.write(line);
+            writer.newLine();
+            writer.flush();
+
+            System.out.println("💾 Préstamo guardado: " + reader.getUsername() + " -> " + book.getTitle());
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("❌ Error guardando préstamo: " + e.getMessage());
             return false;
         }
     }

@@ -90,6 +90,10 @@ public class MyLoansController {
             setupTableColumns();
             setupSelectionListener();
 
+            if (currentReader != null) {
+                currentReader.syncLoanHistoryFromPersistence();
+            }
+
             // CORRECCIÓN: Cargar préstamos con delay para asegurar que todo esté listo
             Platform.runLater(() -> {
                 try {
@@ -268,16 +272,14 @@ public class MyLoansController {
             return;
         }
 
-        loansList.clear();
         System.out.println("🔄 Cargando préstamos para: " + currentReader.getName());
 
         try {
-            // CORRECCIÓN: Cargar desde persistencia como fuente de verdad
+            // CORRECCIÓN: Limpiar ANTES de cargar para evitar duplicados
+            loansList.clear();
+
             Persistence persistence = new Persistence();
             HashMap<String, Persistence.LoanRecord> activeLoans = persistence.loadActiveLoans();
-
-            // CORRECCIÓN: Limpiar historial actual para sincronizar
-            LinkedList<Book> currentHistory = new LinkedList<>();
 
             // Filtrar préstamos del usuario actual
             LinkedList<String> loanKeys = activeLoans.keySet();
@@ -286,37 +288,27 @@ public class MyLoansController {
                 Persistence.LoanRecord loanRecord = activeLoans.get(key);
 
                 if (loanRecord.getReader().getUsername().equals(currentReader.getUsername())) {
-                    // CORRECCIÓN: Asegurar que el libro tenga el estado correcto
                     Book book = loanRecord.getBook();
                     book.setStatus(BookStatus.CHECKED_OUT);
 
-                    // Crear LoanInfo con fechas reales de persistencia
                     LoanInfo loanInfo = new LoanInfo(book,
                             loanRecord.getLoanDate(),
                             loanRecord.getDueDate());
                     loansList.add(loanInfo);
-
-                    // CORRECCIÓN: Añadir al historial sincronizado
-                    currentHistory.add(book);
 
                     System.out.println("📚 Préstamo cargado: " + book.getTitle() +
                             " (vence: " + loanRecord.getDueDate() + ")");
                 }
             }
 
-            // CORRECCIÓN: Sincronizar historial del reader con persistencia
-            currentReader.getLoanHistoryList().clear();
-            for (Book book : currentHistory) {
-                currentReader.getLoanHistoryList().add(book);
-            }
+            // IMPORTANTE: NO modificar el historial del reader aquí
+            // El historial se maneja en el momento del préstamo/devolución
 
             // Actualizar tabla
             tbLoans.setItems(loansList);
+            tbLoans.refresh(); // NUEVO: Forzar refresh visual
 
-            // Mostrar resumen
             updateLoansSummary();
-
-            // Verificar libros próximos a vencer
             checkUpcomingDueDates();
 
             System.out.println("✅ Préstamos cargados desde persistencia: " + loansList.size());
@@ -329,23 +321,19 @@ public class MyLoansController {
     }
 
     /**
-     * NUEVO: Método para refrescar préstamos forzando recarga desde persistencia
+     * CORREGIDO: Método de refresh mejorado
      */
     public void refreshLoans() {
         try {
             System.out.println("🔄 Refrescando préstamos desde persistencia...");
 
-            // Forzar recarga desde persistencia
+            // Recargar desde persistencia (fuente de verdad)
             loadCurrentLoans();
 
-            // Forzar actualización de la tabla
+            // Forzar actualización visual
             Platform.runLater(() -> {
                 tbLoans.refresh();
-                if (loansList.size() > 0) {
-                    System.out.println("✅ Tabla actualizada con " + loansList.size() + " préstamos");
-                } else {
-                    System.out.println("ℹ️ No hay préstamos activos para mostrar");
-                }
+                System.out.println("✅ Tabla de préstamos refrescada: " + loansList.size() + " préstamos");
             });
 
         } catch (Exception e) {
@@ -685,7 +673,7 @@ public class MyLoansController {
 
                 System.out.println("🔄 Procesando devolución: " + book.getTitle());
 
-                // CORRECCIÓN: Procesar devolución usando el método mejorado de Reader
+                // CORRECCIÓN: Usar el método corregido de Reader
                 boolean success = currentReader.returnBook(book);
 
                 if (success) {
@@ -704,18 +692,16 @@ public class MyLoansController {
                         askForRating(book);
                     }
 
-                    // CORRECCIÓN: Actualización completa de interfaces
+                    // CORRECCIÓN: Actualización inmediata y completa
                     System.out.println("✅ Devolución exitosa, actualizando interfaces...");
 
-                    // 1. Recargar préstamos inmediatamente
+                    // 1. Recargar préstamos inmediatamente (sin delay)
                     loadCurrentLoans();
 
                     // 2. Actualizar interfaz de libros en HomeController
                     if (homeController != null) {
-                        Platform.runLater(() -> {
-                            homeController.refreshBooksTable();
-                            System.out.println("✅ Tabla de libros actualizada tras devolución");
-                        });
+                        homeController.refreshBooksTable();
+                        System.out.println("✅ Tabla de libros actualizada tras devolución");
                     } else {
                         System.err.println("⚠️ HomeController no disponible para actualizar");
                     }
@@ -725,11 +711,18 @@ public class MyLoansController {
                 }
             }
 
+        } catch (RuntimeException e) {
+            // Mostrar error específico del negocio
+            showAlert("Error de Devolución", e.getMessage());
+            System.err.println("❌ Error de negocio en devolución: " + e.getMessage());
         } catch (Exception e) {
-            showAlert("Error", "Error al devolver el libro: " + e.getMessage());
+            // Mostrar error técnico genérico
+            showAlert("Error Técnico", "Error inesperado al devolver el libro: " + e.getMessage());
+            System.err.println("❌ Error técnico en devolución: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
 
     /**
      * NUEVO: Método principal de devolución (para el botón principal)
