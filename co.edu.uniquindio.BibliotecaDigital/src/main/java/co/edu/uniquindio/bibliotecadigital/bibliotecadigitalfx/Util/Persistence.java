@@ -435,24 +435,42 @@ public class Persistence {
 
     public boolean saveRating(Rating rating) {
         if (rating == null || rating.getReader() == null || rating.getBook() == null) {
+            System.err.println("❌ Datos de valoración inválidos");
             return false;
         }
 
-        try (BufferedWriter writer = getFileWriter(RATINGS_FILE, true)) {
-            String line = String.format("%s,%s,%d,%s",
-                    rating.getReader().getUsername(),
-                    rating.getBook().getIdBook(),
-                    rating.getStars(),
-                    rating.getComment() != null ? rating.getComment().replace(",", ";") : "");
-            writer.write(line);
-            writer.newLine();
-            writer.flush();
+        try {
+            // CORRECCIÓN 1: Verificar si ya existe esta valoración
+            String checkKey = rating.getReader().getUsername() + "|" + rating.getBook().getIdBook();
+            HashMap<String, Rating> existingRatings = loadRatings();
 
-            System.out.println("💾 Valoración guardada");
-            return true;
+            if (existingRatings.containsKey(checkKey)) {
+                System.out.println("⚠️ Valoración ya existe, no se duplicará: " + checkKey);
+                return true; // No es error, simplemente ya existe
+            }
 
-        } catch (IOException e) {
-            System.err.println("❌ Error guardando valoración: " + e.getMessage());
+            // CORRECCIÓN 2: Guardar en archivo
+            try (BufferedWriter writer = getFileWriter(RATINGS_FILE, true)) {
+                String line = String.format("%s,%s,%d,%s",
+                        rating.getReader().getUsername(),
+                        rating.getBook().getIdBook(),
+                        rating.getStars(),
+                        rating.getComment() != null ? rating.getComment().replace(",", ";") : "");
+                writer.write(line);
+                writer.newLine();
+                writer.flush();
+
+                System.out.println("💾 Valoración guardada: " + rating.getReader().getUsername() +
+                        " -> " + rating.getBook().getTitle() + " (" + rating.getStars() + "★)");
+                return true;
+
+            } catch (IOException e) {
+                System.err.println("❌ Error escribiendo valoración: " + e.getMessage());
+                return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en saveRating: " + e.getMessage());
             return false;
         }
     }
@@ -688,9 +706,12 @@ public class Persistence {
         try (BufferedReader reader = getFileReader(RATINGS_FILE)) {
             String line;
             int validCount = 0;
+            int lineNumber = 0;
 
             while ((line = reader.readLine()) != null) {
+                lineNumber++;
                 line = line.trim();
+
                 if (line.isEmpty() || line.startsWith("#")) {
                     continue;
                 }
@@ -700,7 +721,7 @@ public class Persistence {
                     String username = parts[0].trim();
                     String bookId = parts[1].trim();
                     String starsStr = parts[2].trim();
-                    String comment = parts.length > 3 ? parts[3].trim() : "";
+                    String comment = parts.length > 3 ? parts[3].trim().replace(";", ",") : "";
 
                     try {
                         int stars = Integer.parseInt(starsStr);
@@ -711,27 +732,64 @@ public class Persistence {
                         if (readerObj != null && bookObj != null) {
                             Rating rating = new Rating(readerObj, bookObj, stars, comment);
                             String key = username + "|" + bookId;
-                            ratings.put(key, rating);
 
-                            // IMPORTANTE: Agregar a la lista del reader
-                            readerObj.getRatingsList().add(rating);
-
-                            validCount++;
-                            System.out.println("⭐ Rating cargado en memoria: " + username + " -> " + bookObj.getTitle());
+                            // CORRECCIÓN: Evitar duplicados
+                            if (!ratings.containsKey(key)) {
+                                ratings.put(key, rating);
+                                validCount++;
+                                System.out.println("⭐ Rating cargado: " + username + " -> " +
+                                        bookObj.getTitle() + " (" + stars + "★)");
+                            } else {
+                                System.out.println("⚠️ Rating duplicado omitido en línea " + lineNumber);
+                            }
+                        } else {
+                            System.err.println("⚠️ Datos inválidos en línea " + lineNumber + ": " +
+                                    (readerObj == null ? "Lector no encontrado: " + username : "") +
+                                    (bookObj == null ? "Libro no encontrado: " + bookId : ""));
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠️ Puntuación inválida: " + line);
+                        System.err.println("⚠️ Puntuación inválida en línea " + lineNumber + ": " + starsStr);
                     }
+                } else {
+                    System.err.println("⚠️ Formato inválido en línea " + lineNumber + ": " + line);
                 }
             }
 
-            System.out.println("✅ Valoraciones cargadas en memoria: " + validCount);
+            System.out.println("✅ Valoraciones cargadas desde archivo: " + validCount);
 
         } catch (IOException e) {
-            System.err.println("⚠️ Error leyendo valoraciones: " + e.getMessage());
+            System.err.println("⚠️ Error leyendo valoraciones (archivo puede no existir): " + e.getMessage());
+            // Crear archivo vacío si no existe
+            createFileIfNotExists(RATINGS_FILE, "# Archivo de valoraciones - Usuario,LibroID,Estrellas,Comentario");
         }
 
         return ratings;
+    }
+
+    /**
+     * NUEVO: Método para debug de valoraciones
+     */
+    public void debugRatingsState() {
+        try {
+            System.out.println("🔍 DEBUG - Estado de valoraciones:");
+            HashMap<String, Rating> ratings = loadRatings();
+
+            if (ratings.size() == 0) {
+                System.out.println("   - No hay valoraciones en el archivo");
+            } else {
+                LinkedList<String> keys = ratings.keySet();
+                for (int i = 0; i < keys.getSize(); i++) {
+                    Rating rating = ratings.get(keys.getAmountNodo(i));
+                    System.out.println(String.format("   - %s valoró '%s' con %d estrellas: %s",
+                            rating.getReader().getName(),
+                            rating.getBook().getTitle(),
+                            rating.getStars(),
+                            rating.getComment()));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error en debug de valoraciones: " + e.getMessage());
+        }
     }
 
     /**

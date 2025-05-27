@@ -5,8 +5,10 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Rating;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -65,6 +67,10 @@ public class MyRatingsController {
         assert tcTitle != null : "fx:id=\"tcTitle\" was not injected: check your FXML file 'MyRatings.fxml'.";
         assert tcAuthor != null : "fx:id=\"tcAuthor\" was not injected: check your FXML file 'MyRatings.fxml'.";
         assert tcRating != null : "fx:id=\"tcRating\" was not injected: check your FXML file 'MyRatings.fxml'.";
+
+        // CORRECCIÓN: Registrar este controlador en el registry
+        ControllerRegistry.getInstance().registerController("MyRatingsController", this);
+        System.out.println("✅ MyRatingsController registrado en el registry");
 
         initializeUserData();
         setupTableColumns();
@@ -224,19 +230,55 @@ public class MyRatingsController {
             return;
         }
 
-        ratingsList.clear();
-        LinkedList<Rating> userRatings = currentReader.getRatingsList();
+        System.out.println("🔄 Cargando valoraciones para: " + currentReader.getName());
 
-        for (Rating rating : userRatings) {
-            RatingInfo ratingInfo = new RatingInfo(rating);
-            ratingsList.add(ratingInfo);
+        try {
+            ratingsList.clear();
+
+            // CORRECCIÓN 1: Sincronizar con persistencia primero
+            Persistence persistence = new Persistence();
+            HashMap<String, Rating> allRatings = persistence.loadRatings();
+
+            // CORRECCIÓN 2: Limpiar lista del reader y recargar desde persistencia
+            currentReader.getRatingsList().clear();
+
+            // CORRECCIÓN 3: Filtrar valoraciones del usuario actual
+            LinkedList<String> ratingKeys = allRatings.keySet();
+            int userRatingsCount = 0;
+
+            for (int i = 0; i < ratingKeys.getSize(); i++) {
+                String key = ratingKeys.getAmountNodo(i);
+                Rating rating = allRatings.get(key);
+
+                if (rating != null && rating.getReader() != null &&
+                        rating.getReader().getUsername().equals(currentReader.getUsername())) {
+
+                    // Agregar a la lista del reader
+                    currentReader.getRatingsList().add(rating);
+
+                    // Crear RatingInfo para la tabla
+                    RatingInfo ratingInfo = new RatingInfo(rating);
+                    ratingsList.add(ratingInfo);
+                    userRatingsCount++;
+
+                    System.out.println("⭐ Valoración cargada: " + rating.getBook().getTitle() +
+                            " (" + rating.getStars() + "★)");
+                }
+            }
+
+            // CORRECCIÓN 4: Ordenar por fecha (más recientes primero)
+            sortRatingsByDate();
+
+            // CORRECCIÓN 5: Actualizar tabla
+            tbRatings.setItems(ratingsList);
+            updateRatingsDisplay();
+
+            System.out.println("✅ Valoraciones cargadas: " + userRatingsCount + " valoraciones del usuario");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error cargando valoraciones del usuario: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        // Ordenar por fecha (más recientes primero)
-        sortRatingsByDate();
-
-        tbRatings.setItems(ratingsList);
-        updateRatingsDisplay();
     }
 
     /**
@@ -525,8 +567,22 @@ public class MyRatingsController {
      * Método público para refrescar las valoraciones
      */
     public void refreshRatings() {
-        loadUserRatings();
-        calculatePersonalStats();
+        System.out.println("🔄 Refrescando valoraciones en MyRatingsController...");
+
+        try {
+            // Forzar recarga desde persistencia
+            loadUserRatings();
+            calculatePersonalStats();
+
+            // Actualizar interfaz
+            Platform.runLater(() -> {
+                tbRatings.refresh();
+                System.out.println("✅ Interfaz de valoraciones actualizada");
+            });
+
+        } catch (Exception e) {
+            System.err.println("❌ Error refrescando valoraciones: " + e.getMessage());
+        }
     }
 
     /**
@@ -558,7 +614,14 @@ public class MyRatingsController {
 
         public RatingInfo(Rating rating) {
             this.rating = rating;
-            this.dateCreated = LocalDateTime.now(); // En una app real, esto vendría de la DB
+            // CORRECCIÓN: Usar fecha actual como approximación (en una app real vendría de la DB)
+            this.dateCreated = LocalDateTime.now();
+        }
+
+        // NUEVO: Constructor con fecha específica
+        public RatingInfo(Rating rating, LocalDateTime dateCreated) {
+            this.rating = rating;
+            this.dateCreated = dateCreated;
         }
 
         public Rating getRating() { return rating; }
@@ -585,9 +648,28 @@ public class MyRatingsController {
             return dateCreated.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
         }
 
+        // NUEVO: Método para comparar fechas (para ordenamiento)
+        public boolean isNewerThan(RatingInfo other) {
+            return this.dateCreated.isAfter(other.dateCreated);
+        }
+
         @Override
         public String toString() {
             return rating.getBook().getTitle() + " - " + getStarsDisplay();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            RatingInfo that = (RatingInfo) obj;
+            return rating.getBook().getIdBook().equals(that.rating.getBook().getIdBook()) &&
+                    rating.getReader().getUsername().equals(that.rating.getReader().getUsername());
+        }
+
+        @Override
+        public int hashCode() {
+            return rating.getBook().getIdBook().hashCode() + rating.getReader().getUsername().hashCode();
         }
     }
 }

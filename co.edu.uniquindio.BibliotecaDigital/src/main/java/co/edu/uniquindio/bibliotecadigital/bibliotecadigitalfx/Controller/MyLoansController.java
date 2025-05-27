@@ -526,22 +526,6 @@ public class MyLoansController {
         }
     }
 
-    /**
-     * Abre interfaz para valorar un libro
-     */
-    private void rateBook(LoanInfo loanInfo) {
-        Book book = loanInfo.getBook();
-
-        if (hasRatedBook(book)) {
-            showAlert("Libro Ya Valorado",
-                    "Ya has valorado este libro anteriormente.");
-            return;
-        }
-
-        // Crear diálogo de valoración personalizado
-        Dialog<ButtonType> ratingDialog = createRatingDialog(book);
-        ratingDialog.showAndWait();
-    }
 
     /**
      * Crea diálogo personalizado para valorar libros
@@ -570,25 +554,60 @@ public class MyLoansController {
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        // Manejar resultado
+        // CORRECCIÓN: Manejar resultado directamente aquí
         dialog.setResultConverter(buttonType -> {
             if (buttonType == ButtonType.OK) {
                 try {
                     int stars = starsCombo.getValue();
                     String comment = commentArea.getText().trim();
 
-                    currentReader.rateBook(book, stars, comment);
-                    showAlert("Valoración Guardada",
-                            "Gracias por valorar \"" + book.getTitle() + "\" con " + stars + " estrellas.");
+                    // USAR EL MÉTODO CORREGIDO
+                    boolean success = currentReader.rateBook(book, stars, comment);
+
+                    if (success) {
+                        // Mostrar confirmación
+                        Platform.runLater(() -> {
+                            showAlert("Valoración Guardada",
+                                    "Gracias por valorar \"" + book.getTitle() + "\" con " + stars + " estrellas.");
+
+                            // Actualizar controladores
+                            updateMyRatingsController();
+                            updateLibraryStatsController();
+                        });
+                    } else {
+                        Platform.runLater(() -> {
+                            showAlert("Error", "No se pudo guardar la valoración.");
+                        });
+                    }
 
                 } catch (Exception e) {
-                    showAlert("Error", "No se pudo guardar la valoración: " + e.getMessage());
+                    Platform.runLater(() -> {
+                        showAlert("Error", "Error al guardar la valoración: " + e.getMessage());
+                    });
+                    e.printStackTrace();
                 }
             }
             return buttonType;
         });
 
         return dialog;
+    }
+
+    /**
+     * MÉTODO SIMPLIFICADO: Valorar libro (ahora solo abre el diálogo)
+     */
+    private void rateBook(LoanInfo loanInfo) {
+        Book book = loanInfo.getBook();
+
+        if (hasRatedBook(book)) {
+            showAlert("Libro Ya Valorado",
+                    "Ya has valorado este libro anteriormente.");
+            return;
+        }
+
+        // Simplemente crear y mostrar el diálogo
+        Dialog<ButtonType> ratingDialog = createRatingDialog(book);
+        ratingDialog.showAndWait();
     }
 
     /**
@@ -631,7 +650,93 @@ public class MyLoansController {
                 "\"\n\nTus valoraciones ayudan a otros lectores y mejoran las recomendaciones.");
 
         if (ratingPrompt.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            rateBook(new LoanInfo(book));
+            rateBookWithUpdate(book);
+        }
+    }
+
+    private void rateBookWithUpdate(Book book) {
+        try {
+            // Crear diálogo de valoración personalizado
+            Dialog<ButtonType> ratingDialog = createRatingDialog(book);
+
+            ratingDialog.setResultConverter(buttonType -> {
+                if (buttonType == ButtonType.OK) {
+                    try {
+                        // Obtener valores del diálogo (necesitarás acceso a los controles)
+                        VBox content = (VBox) ratingDialog.getDialogPane().getContent();
+                        ComboBox<Integer> starsCombo = (ComboBox<Integer>) content.getChildren().get(1);
+                        TextArea commentArea = (TextArea) content.getChildren().get(3);
+
+                        int stars = starsCombo.getValue();
+                        String comment = commentArea.getText().trim();
+
+                        // CORRECCIÓN: Usar el método corregido de valoración
+                        boolean success = currentReader.rateBook(book, stars, comment);
+
+                        if (success) {
+                            showAlert("Valoración Guardada",
+                                    "Gracias por valorar \"" + book.getTitle() + "\" con " + stars + " estrellas.");
+
+                            // CORRECCIÓN: Actualizar MyRatingsController usando el registry
+                            updateMyRatingsController();
+
+                            // CORRECCIÓN: También actualizar estadísticas
+                            updateLibraryStatsController();
+
+                        } else {
+                            showAlert("Error", "No se pudo guardar la valoración.");
+                        }
+
+                    } catch (Exception e) {
+                        showAlert("Error", "Error al guardar la valoración: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+                return buttonType;
+            });
+
+            ratingDialog.showAndWait();
+
+        } catch (Exception e) {
+            showAlert("Error", "Error creando diálogo de valoración: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * NUEVO MÉTODO: Actualizar MyRatingsController
+     */
+    private void updateMyRatingsController() {
+        try {
+            // Intentar obtener MyRatingsController del registry
+            ControllerRegistry registry = ControllerRegistry.getInstance();
+            MyRatingsController ratingsController = registry.getController("MyRatingsController", MyRatingsController.class);
+
+            if (ratingsController != null) {
+                ratingsController.refreshRatings();
+                System.out.println("✅ MyRatingsController actualizado tras nueva valoración");
+            } else {
+                System.out.println("⚠️ MyRatingsController no encontrado en registry");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando MyRatingsController: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO MÉTODO: Actualizar LibraryStatsController
+     */
+    private void updateLibraryStatsController() {
+        try {
+            ControllerRegistry registry = ControllerRegistry.getInstance();
+            LibraryStatsController statsController = registry.getController("LibraryStatsController", LibraryStatsController.class);
+
+            if (statsController != null) {
+                statsController.refreshAfterRatingsLoaded();
+                System.out.println("✅ LibraryStatsController actualizado tras nueva valoración");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando LibraryStatsController: " + e.getMessage());
         }
     }
 

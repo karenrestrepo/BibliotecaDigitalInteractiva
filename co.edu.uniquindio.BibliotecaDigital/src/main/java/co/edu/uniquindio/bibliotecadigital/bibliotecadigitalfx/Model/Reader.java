@@ -208,19 +208,41 @@ public class Reader extends Person {
             }
         }
 
-        // Crear nueva valoración
-        Rating rating = new Rating(this, book, stars, comment);
-        ratingsList.add(rating);
+        try {
+            // Crear nueva valoración
+            Rating rating = new Rating(this, book, stars, comment);
 
-        // Actualizar la valoración promedio del libro
-        book.addRating(stars);
+            // CORRECCIÓN 1: Agregar a la lista en memoria
+            ratingsList.add(rating);
 
-        // Notificar al sistema de afinidad que se actualizó una valoración
-        if (library != null) {
-            // Aquí triggearías la actualización del grafo de afinidad
+            // CORRECCIÓN 2: Persistir inmediatamente
+            Persistence persistence = new Persistence();
+            boolean saved = persistence.saveRating(rating);
+
+            if (!saved) {
+                // Rollback si falla la persistencia
+                ratingsList.delete(rating);
+                throw new RuntimeException("Error al guardar la valoración");
+            }
+
+            // CORRECCIÓN 3: Actualizar la valoración promedio del libro
+            book.addRating(stars);
+
+            // CORRECCIÓN 4: Actualizar en la biblioteca global
+            if (library != null) {
+                String ratingKey = this.getUsername() + "|" + book.getIdBook();
+                library.getRatings().put(ratingKey, rating);
+            }
+
+            System.out.println("✅ Valoración guardada y persistida: " + this.getName() +
+                    " -> " + book.getTitle() + " (" + stars + "★)");
+
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en valoración: " + e.getMessage());
+            throw new RuntimeException("Error al procesar la valoración: " + e.getMessage());
         }
-
-        return true;
     }
 
     // =============== SISTEMA DE RECOMENDACIONES ===============
