@@ -6,9 +6,11 @@ import java.util.*;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -136,6 +138,9 @@ public class HomeController {
         }
     }
 
+    /**
+     * MÉTODO CORREGIDO: Maneja la solicitud de préstamo con actualización completa
+     */
     private void requestBook(String title) {
         try {
             if (title.isBlank()) {
@@ -170,20 +175,38 @@ public class HomeController {
 
             Reader reader = (Reader) currentUser;
 
-            // USAR EL MÉTODO MEJORADO que incluye persistencia
+            System.out.println("🔄 Procesando préstamo para: " + reader.getName() + " -> " + book.getTitle());
+
+            // CORRECCIÓN: Usar el método mejorado de préstamo
             if (reader.requestLoan(book)) {
-                // ACTUALIZAR TABLAS INMEDIATAMENTE
+
+                // CORRECCIÓN: Actualización inmediata y completa
+                System.out.println("✅ Préstamo exitoso, actualizando interfaces...");
+
+                // 1. Actualizar tabla de libros (estado cambió a prestado)
                 refreshBooksTable();
+
+                // 2. Esperar un momento para que la persistencia se complete
+                Platform.runLater(() -> {
+                    try {
+                        // 3. Actualizar mis préstamos CON DELAY para asegurar persistencia
+                        if (myLoansController != null) {
+                            myLoansController.refreshLoans();
+                            System.out.println("✅ Tabla de préstamos actualizada");
+                        } else {
+                            System.err.println("⚠️ MyLoansController no disponible");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("❌ Error actualizando préstamos: " + e.getMessage());
+                    }
+                });
 
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
                         "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!\n" +
-                                "Recuerda devolverlo en 14 días.");
-                txtSearchBook.clear();
+                                "Recuerda devolverlo en 14 días.\n\n" +
+                                "Ve a 'Panel personal > Mis préstamos' para ver todos tus préstamos.");
 
-                // ACTUALIZAR MIS PRÉSTAMOS
-                if (myLoansController != null) {
-                    myLoansController.refreshLoans();
-                }
+                txtSearchBook.clear();
 
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error de préstamo",
@@ -198,15 +221,26 @@ public class HomeController {
     }
 
     /**
-     * NUEVO MÉTODO: Refresca la tabla de libros desde persistencia
+     * MÉTODO MEJORADO: Refresca la tabla de libros desde persistencia
      */
     public void refreshBooksTable() {
         try {
             System.out.println("🔄 Refrescando tabla de libros...");
 
-            // Recargar libros desde persistencia para obtener estados actualizados
+            // CORRECCIÓN: Recargar completamente desde persistencia
             Persistence persistence = new Persistence();
             co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap<String, Book> updatedBooks = persistence.loadBooks();
+
+            // CORRECCIÓN: Actualizar estados desde archivo de préstamos
+            HashMap<String, Persistence.LoanRecord> activeLoans = persistence.loadActiveLoans();
+            LinkedList<String> loanKeys = activeLoans.keySet();
+            for (int i = 0; i < loanKeys.getSize(); i++) {
+                Persistence.LoanRecord loanRecord = activeLoans.get(loanKeys.getAmountNodo(i));
+                String bookId = loanRecord.getBook().getIdBook();
+                if (updatedBooks.containsKey(bookId)) {
+                    updatedBooks.get(bookId).setStatus(BookStatus.CHECKED_OUT);
+                }
+            }
 
             // Actualizar el árbol de títulos de la biblioteca
             library.getTitleTree().clear();
@@ -216,13 +250,23 @@ public class HomeController {
                 library.getTitleTree().insert(book);
             }
 
+            // Actualizar otros árboles también
+            library.getAuthorTree().clear();
+            library.getCategoryTree().clear();
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                Book book = updatedBooks.get(bookKeys.getAmountNodo(i));
+                library.getAuthorTree().insert(book);
+                library.getCategoryTree().insert(book);
+            }
+
             // Recargar la tabla
             loadBooksOrderedByTitle();
 
-            System.out.println("✅ Tabla de libros actualizada");
+            System.out.println("✅ Tabla de libros actualizada con estados correctos");
 
         } catch (Exception e) {
             System.err.println("❌ Error refrescando tabla de libros: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

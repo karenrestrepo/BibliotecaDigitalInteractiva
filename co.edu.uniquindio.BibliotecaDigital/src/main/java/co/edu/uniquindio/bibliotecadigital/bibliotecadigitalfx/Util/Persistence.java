@@ -13,7 +13,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 public class Persistence {
     private static Person currentUser;
@@ -34,6 +36,7 @@ public class Persistence {
         System.out.println("🔄 Inicializando sistema de persistencia corregido...");
         ensureDirectoriesExist();
         verifyAndCreateFiles();
+        verifyLoansFile();
     }
 
     /**
@@ -1172,6 +1175,65 @@ public class Persistence {
         public Book getBook() { return book; }
         public java.time.LocalDate getLoanDate() { return loanDate; }
         public java.time.LocalDate getDueDate() { return dueDate; }
+    }
+
+    /**
+     * NUEVO: Verifica que el archivo de préstamos tenga el formato correcto
+     */
+    public void verifyLoansFile() {
+        try {
+            Path loansPath = Paths.get(BASE_PATH + LOANS_FILE);
+
+            if (!Files.exists(loansPath)) {
+                System.out.println("📄 Creando archivo de préstamos...");
+                Files.createFile(loansPath);
+                Files.write(loansPath, "# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento\n".getBytes());
+            } else {
+                // Verificar que el header esté correcto
+                List<String> lines = Files.readAllLines(loansPath);
+                if (lines.isEmpty() || !lines.get(0).startsWith("#")) {
+                    System.out.println("🔧 Corrigiendo header del archivo de préstamos...");
+                    List<String> newLines = new ArrayList<>();
+                    newLines.add("# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento");
+                    newLines.addAll(lines);
+                    Files.write(loansPath, newLines);
+                }
+            }
+
+            System.out.println("✅ Archivo de préstamos verificado");
+
+        } catch (IOException e) {
+            System.err.println("❌ Error verificando archivo de préstamos: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Método de debug para mostrar el estado actual de préstamos
+     */
+    public void debugLoansState() {
+        try {
+            System.out.println("🔍 DEBUG - Estado actual de préstamos:");
+
+            HashMap<String, LoanRecord> loans = loadActiveLoans();
+
+            if (loans.size() == 0) {
+                System.out.println("   - No hay préstamos activos");
+            } else {
+                LinkedList<String> keys = loans.keySet();
+                for (int i = 0; i < keys.getSize(); i++) {
+                    LoanRecord loan = loans.get(keys.getAmountNodo(i));
+                    System.out.println(String.format("   - %s tiene prestado: %s (ID: %s) hasta %s",
+                            loan.getReader().getName(),
+                            loan.getBook().getTitle(),
+                            loan.getBook().getIdBook(),
+                            loan.getDueDate()
+                    ));
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en debug: " + e.getMessage());
+        }
     }
 
 

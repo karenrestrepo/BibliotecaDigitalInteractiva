@@ -1,1 +1,3 @@
-# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimientokaren@gmail.com,012,2025-05-27,2025-06-10
+# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento
+karen@gmail.com,012,2025-05-27,2025-06-10
+karen@gmail.com,008,2025-05-27,2025-06-10

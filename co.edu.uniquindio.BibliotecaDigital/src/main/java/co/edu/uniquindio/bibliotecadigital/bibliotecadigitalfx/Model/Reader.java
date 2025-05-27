@@ -270,6 +270,9 @@ public class Reader extends Person {
     /**
      * Solicita el préstamo de un libro con persistencia completa
      */
+    /**
+     * Solicita el préstamo de un libro con persistencia completa CORREGIDA
+     */
     public boolean requestLoan(Book book) {
         if (book == null) {
             throw new IllegalArgumentException("El libro no puede ser null");
@@ -280,7 +283,7 @@ public class Reader extends Person {
             return false;
         }
 
-        // Verificar que no tenga ya este libro
+        // Verificar que no tenga ya este libro prestado
         for (Book loanedBook : this.loanHistoryList) {
             if (loanedBook.getIdBook().equals(book.getIdBook()) &&
                     loanedBook.getStatus() == BookStatus.CHECKED_OUT) {
@@ -289,45 +292,60 @@ public class Reader extends Person {
             }
         }
 
+        // CORRECCIÓN: Variables para rollback
+        BookStatus originalStatus = book.getStatus();
+        boolean wasInHistory = this.loanHistoryList.contains(book);
+
         try {
-            // PASO 1: Cambiar estado del libro
+            System.out.println("🔄 Iniciando préstamo: " + this.getName() + " -> " + book.getTitle());
+
+            // PASO 1: Cambiar estado del libro en memoria
             book.setStatus(BookStatus.CHECKED_OUT);
 
-            // PASO 2: Añadir a historial del lector
-            this.loanHistoryList.add(book);
+            // PASO 2: Añadir a historial del lector en memoria
+            if (!wasInHistory) {
+                this.loanHistoryList.add(book);
+            }
 
             // PASO 3: Persistir cambios
             Persistence persistence = new Persistence();
 
-            // Guardar estado actualizado del libro
-            boolean bookUpdated = persistence.updateBookStatus(book.getIdBook(), BookStatus.CHECKED_OUT);
-            if (!bookUpdated) {
-                // Rollback si falla
-                book.setStatus(BookStatus.AVAILABLE);
-                this.loanHistoryList.delete(book);
-                System.err.println("❌ Error persistiendo estado del libro");
-                return false;
-            }
-
-            // Guardar el préstamo
+            // CORRECCIÓN: Guardar el préstamo PRIMERO
             boolean loanSaved = persistence.saveLoan(this, book);
             if (!loanSaved) {
-                // Rollback si falla
-                book.setStatus(BookStatus.AVAILABLE);
-                this.loanHistoryList.delete(book);
-                persistence.updateBookStatus(book.getIdBook(), BookStatus.AVAILABLE);
+                // Rollback inmediato
+                book.setStatus(originalStatus);
+                if (!wasInHistory) {
+                    this.loanHistoryList.delete(book);
+                }
                 System.err.println("❌ Error persistiendo préstamo");
                 return false;
             }
 
-            System.out.println("✅ Préstamo exitoso: " + this.getName() + " -> " + book.getTitle());
+            // CORRECCIÓN: Actualizar estado del libro en archivo
+            boolean bookUpdated = persistence.updateBookStatus(book.getIdBook(), BookStatus.CHECKED_OUT);
+            if (!bookUpdated) {
+                // Rollback: eliminar préstamo y restaurar estado
+                persistence.removeLoan(this.getUsername(), book.getIdBook());
+                book.setStatus(originalStatus);
+                if (!wasInHistory) {
+                    this.loanHistoryList.delete(book);
+                }
+                System.err.println("❌ Error persistiendo estado del libro");
+                return false;
+            }
+
+            System.out.println("✅ Préstamo exitoso y persistido: " + this.getName() + " -> " + book.getTitle());
             return true;
 
         } catch (Exception e) {
-            // Rollback en caso de cualquier error
-            book.setStatus(BookStatus.AVAILABLE);
-            this.loanHistoryList.delete(book);
+            // Rollback completo en caso de cualquier error
+            book.setStatus(originalStatus);
+            if (!wasInHistory) {
+                this.loanHistoryList.delete(book);
+            }
             System.err.println("❌ Error en préstamo: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
