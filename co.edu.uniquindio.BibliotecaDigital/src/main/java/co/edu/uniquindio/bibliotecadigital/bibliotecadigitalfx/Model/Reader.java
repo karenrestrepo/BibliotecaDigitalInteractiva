@@ -4,6 +4,7 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.AffinitySystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 
 /**
  * Clase Reader mejorada con sistema completo de recomendaciones,
@@ -106,52 +107,6 @@ public class Reader extends Person {
     }
 
     // =============== SISTEMA DE PRÉSTAMOS ===============
-
-    /**
-     * Solicita el préstamo de un libro
-     * Utiliza cola de prioridad si el libro no está disponible
-     */
-    public boolean requestLoan(Book book) {
-        if (book == null) {
-            throw new IllegalArgumentException("El libro no puede ser null");
-        }
-
-        if (book.getStatus() == BookStatus.AVAILABLE) {
-            // Libro disponible - préstamo inmediato
-            book.setStatus(BookStatus.CHECKED_OUT);
-            this.loanHistoryList.add(book);
-            return true;
-        } else {
-            // Libro no disponible - añadir a lista de espera
-            // Aquí implementarías la cola de prioridad
-            System.out.println("Libro no disponible. Añadido a lista de espera.");
-            return false;
-        }
-    }
-
-    /**
-     * Devuelve un libro prestado
-     */
-    public boolean returnBook(Book book) {
-        // Verificar que el lector tiene el libro
-        boolean hasBook = false;
-        for (int i = 0; i < loanHistoryList.getSize(); i++) {
-            if (loanHistoryList.getAmountNodo(i).getIdBook().equals(book.getIdBook())) {
-                hasBook = true;
-                break;
-            }
-        }
-
-        if (!hasBook) {
-            throw new RuntimeException("El lector no tiene este libro en préstamo.");
-        }
-
-        book.setStatus(BookStatus.AVAILABLE);
-        // Aquí podrías notificar a la cola de espera
-        return true;
-    }
-
-    // Agregar estos métodos a la clase Reader.java
 
     /**
      * Obtiene recomendaciones de libros usando el sistema de ML implementado
@@ -310,6 +265,124 @@ public class Reader extends Person {
         }
 
         return recommendations;
+    }
+
+    /**
+     * Solicita el préstamo de un libro con persistencia completa
+     */
+    public boolean requestLoan(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("El libro no puede ser null");
+        }
+
+        if (book.getStatus() != BookStatus.AVAILABLE) {
+            System.out.println("❌ Libro no disponible para préstamo: " + book.getTitle());
+            return false;
+        }
+
+        // Verificar que no tenga ya este libro
+        for (Book loanedBook : this.loanHistoryList) {
+            if (loanedBook.getIdBook().equals(book.getIdBook()) &&
+                    loanedBook.getStatus() == BookStatus.CHECKED_OUT) {
+                System.out.println("❌ Ya tienes este libro en préstamo");
+                return false;
+            }
+        }
+
+        try {
+            // PASO 1: Cambiar estado del libro
+            book.setStatus(BookStatus.CHECKED_OUT);
+
+            // PASO 2: Añadir a historial del lector
+            this.loanHistoryList.add(book);
+
+            // PASO 3: Persistir cambios
+            Persistence persistence = new Persistence();
+
+            // Guardar estado actualizado del libro
+            boolean bookUpdated = persistence.updateBookStatus(book.getIdBook(), BookStatus.CHECKED_OUT);
+            if (!bookUpdated) {
+                // Rollback si falla
+                book.setStatus(BookStatus.AVAILABLE);
+                this.loanHistoryList.delete(book);
+                System.err.println("❌ Error persistiendo estado del libro");
+                return false;
+            }
+
+            // Guardar el préstamo
+            boolean loanSaved = persistence.saveLoan(this, book);
+            if (!loanSaved) {
+                // Rollback si falla
+                book.setStatus(BookStatus.AVAILABLE);
+                this.loanHistoryList.delete(book);
+                persistence.updateBookStatus(book.getIdBook(), BookStatus.AVAILABLE);
+                System.err.println("❌ Error persistiendo préstamo");
+                return false;
+            }
+
+            System.out.println("✅ Préstamo exitoso: " + this.getName() + " -> " + book.getTitle());
+            return true;
+
+        } catch (Exception e) {
+            // Rollback en caso de cualquier error
+            book.setStatus(BookStatus.AVAILABLE);
+            this.loanHistoryList.delete(book);
+            System.err.println("❌ Error en préstamo: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Devuelve un libro con persistencia completa
+     */
+    public boolean returnBook(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("El libro no puede ser null");
+        }
+
+        // Verificar que el lector tiene el libro
+        boolean hasBook = false;
+        for (Book loanedBook : loanHistoryList) {
+            if (loanedBook.getIdBook().equals(book.getIdBook()) &&
+                    loanedBook.getStatus() == BookStatus.CHECKED_OUT) {
+                hasBook = true;
+                break;
+            }
+        }
+
+        if (!hasBook) {
+            throw new RuntimeException("El lector no tiene este libro en préstamo.");
+        }
+
+        try {
+            // PASO 1: Cambiar estado del libro
+            book.setStatus(BookStatus.AVAILABLE);
+
+            // PASO 2: Persistir cambios
+            Persistence persistence = new Persistence();
+
+            // Actualizar estado en archivo
+            boolean bookUpdated = persistence.updateBookStatus(book.getIdBook(), BookStatus.AVAILABLE);
+            if (!bookUpdated) {
+                book.setStatus(BookStatus.CHECKED_OUT); // Rollback
+                System.err.println("❌ Error persistiendo devolución del libro");
+                return false;
+            }
+
+            // Eliminar préstamo del archivo
+            boolean loanRemoved = persistence.removeLoan(this.getUsername(), book.getIdBook());
+            if (!loanRemoved) {
+                System.err.println("⚠️ No se pudo eliminar el registro de préstamo, pero el libro fue devuelto");
+            }
+
+            System.out.println("✅ Libro devuelto: " + this.getName() + " -> " + book.getTitle());
+            return true;
+
+        } catch (Exception e) {
+            book.setStatus(BookStatus.CHECKED_OUT); // Rollback
+            System.err.println("❌ Error en devolución: " + e.getMessage());
+            return false;
+        }
     }
 
 

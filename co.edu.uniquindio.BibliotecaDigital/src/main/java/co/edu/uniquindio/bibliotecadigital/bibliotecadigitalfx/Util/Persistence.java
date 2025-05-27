@@ -2,6 +2,7 @@ package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.LibraryStatsController;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.BinarySearchTree;
@@ -27,6 +28,7 @@ public class Persistence {
     private static final String BOOKS_FILE = "Books/Books.txt";
     private static final String RATINGS_FILE = "Ratings/Ratings.txt";
     private static final String CONNECTIONS_FILE = "Connections/Connections.txt";
+    private static final String LOANS_FILE = "Loans/Loans.txt";
 
     public Persistence() {
         System.out.println("🔄 Inicializando sistema de persistencia corregido...");
@@ -39,7 +41,7 @@ public class Persistence {
      */
     private void ensureDirectoriesExist() {
         try {
-            String[] directories = {"Readers", "Administrators", "Books", "Ratings", "Connections"};
+            String[] directories = {"Readers", "Administrators", "Books", "Ratings", "Connections", "Loans"};
 
             for (String dir : directories) {
                 Path dirPath = Paths.get(BASE_PATH + dir);
@@ -62,6 +64,7 @@ public class Persistence {
         createFileIfNotExists(BOOKS_FILE, "# Archivo de libros - ID,Título,Autor,Año,Categoría");
         createFileIfNotExists(RATINGS_FILE, "# Archivo de valoraciones - Usuario,LibroID,Estrellas,Comentario");
         createFileIfNotExists(CONNECTIONS_FILE, "# Archivo de conexiones - Usuario1,Usuario2");
+        createFileIfNotExists(LOANS_FILE, "# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento");
     }
 
     private void createFileIfNotExists(String relativePath, String header) {
@@ -1000,6 +1003,175 @@ public class Persistence {
         } catch (Exception e) {
             System.err.println("❌ Error actualizando valoraciones: " + e.getMessage());
         }
+    }
+
+    /**
+     * Guarda un préstamo activo
+     */
+    public boolean saveLoan(Reader reader, Book book) {
+        if (reader == null || book == null) {
+            return false;
+        }
+
+        try (BufferedWriter writer = getFileWriter(LOANS_FILE, true)) {
+            // Formato: username,bookId,fechaPrestamo,fechaVencimiento
+            java.time.LocalDate fechaPrestamo = java.time.LocalDate.now();
+            java.time.LocalDate fechaVencimiento = fechaPrestamo.plusDays(14); // 14 días de préstamo
+
+            String line = String.format("%s,%s,%s,%s",
+                    reader.getUsername(),
+                    book.getIdBook(),
+                    fechaPrestamo.toString(),
+                    fechaVencimiento.toString());
+            writer.write(line);
+            writer.newLine();
+            writer.flush();
+
+            System.out.println("💾 Préstamo guardado: " + reader.getUsername() + " -> " + book.getTitle());
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("❌ Error guardando préstamo: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza el estado de un libro en el archivo
+     */
+    public boolean updateBookStatus(String bookId, BookStatus newStatus) {
+        HashMap<String, Book> books = loadBooks();
+
+        if (!books.containsKey(bookId)) {
+            System.err.println("❌ Libro no encontrado para actualizar estado: " + bookId);
+            return false;
+        }
+
+        Book book = books.get(bookId);
+        book.setStatus(newStatus);
+
+        return saveAllBooks(books);
+    }
+
+    /**
+     * Carga préstamos activos desde archivo
+     */
+    public HashMap<String, LoanRecord> loadActiveLoans() {
+        HashMap<String, LoanRecord> loans = new HashMap<>();
+        HashMap<String, Reader> readers = loadReaders();
+        HashMap<String, Book> books = loadBooks();
+
+        try (BufferedReader reader = getFileReader(LOANS_FILE)) {
+            String line;
+            int validCount = 0;
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split(",");
+                if (parts.length >= 4) {
+                    String username = parts[0].trim();
+                    String bookId = parts[1].trim();
+                    String fechaPrestamoStr = parts[2].trim();
+                    String fechaVencimientoStr = parts[3].trim();
+
+                    Reader readerObj = readers.get(username);
+                    Book bookObj = books.get(bookId);
+
+                    if (readerObj != null && bookObj != null) {
+                        try {
+                            java.time.LocalDate fechaPrestamo = java.time.LocalDate.parse(fechaPrestamoStr);
+                            java.time.LocalDate fechaVencimiento = java.time.LocalDate.parse(fechaVencimientoStr);
+
+                            LoanRecord loanRecord = new LoanRecord(readerObj, bookObj, fechaPrestamo, fechaVencimiento);
+                            String key = username + "|" + bookId;
+                            loans.put(key, loanRecord);
+
+                            validCount++;
+                            System.out.println("📚 Préstamo cargado: " + username + " -> " + bookObj.getTitle());
+                        } catch (Exception e) {
+                            System.err.println("⚠️ Error parsing fechas: " + line);
+                        }
+                    }
+                }
+            }
+
+            System.out.println("✅ Préstamos activos cargados: " + validCount);
+
+        } catch (IOException e) {
+            System.err.println("⚠️ Error leyendo préstamos activos: " + e.getMessage());
+            createFileIfNotExists(LOANS_FILE, "# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento");
+        }
+
+        return loans;
+    }
+
+    /**
+     * Elimina un préstamo (cuando se devuelve)
+     */
+    public boolean removeLoan(String username, String bookId) {
+        HashMap<String, LoanRecord> loans = loadActiveLoans();
+        String key = username + "|" + bookId;
+
+        if (!loans.containsKey(key)) {
+            System.err.println("❌ Préstamo no encontrado: " + key);
+            return false;
+        }
+
+        loans.remove(key);
+
+        // Reescribir archivo sin el préstamo eliminado
+        try (BufferedWriter writer = getFileWriter(LOANS_FILE, false)) {
+            writer.write("# Archivo de préstamos - Usuario,LibroID,FechaPrestamo,FechaVencimiento");
+            writer.newLine();
+
+            LinkedList<String> keys = loans.keySet();
+            for (int i = 0; i < keys.getSize(); i++) {
+                String loanKey = keys.getAmountNodo(i);
+                LoanRecord loan = loans.get(loanKey);
+
+                String line = String.format("%s,%s,%s,%s",
+                        loan.getReader().getUsername(),
+                        loan.getBook().getIdBook(),
+                        loan.getLoanDate().toString(),
+                        loan.getDueDate().toString());
+                writer.write(line);
+                writer.newLine();
+            }
+            writer.flush();
+
+            System.out.println("💾 Préstamo eliminado: " + key);
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("❌ Error eliminando préstamo: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Clase auxiliar para representar un préstamo
+     */
+    public static class LoanRecord {
+        private Reader reader;
+        private Book book;
+        private java.time.LocalDate loanDate;
+        private java.time.LocalDate dueDate;
+
+        public LoanRecord(Reader reader, Book book, java.time.LocalDate loanDate, java.time.LocalDate dueDate) {
+            this.reader = reader;
+            this.book = book;
+            this.loanDate = loanDate;
+            this.dueDate = dueDate;
+        }
+
+        public Reader getReader() { return reader; }
+        public Book getBook() { return book; }
+        public java.time.LocalDate getLoanDate() { return loanDate; }
+        public java.time.LocalDate getDueDate() { return dueDate; }
     }
 
 
