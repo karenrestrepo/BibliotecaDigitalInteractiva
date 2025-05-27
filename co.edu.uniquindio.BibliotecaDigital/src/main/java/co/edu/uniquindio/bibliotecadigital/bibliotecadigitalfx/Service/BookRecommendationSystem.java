@@ -293,11 +293,22 @@ public class BookRecommendationSystem {
      */
     private HashSet<String> getBooksReadByUser(Reader reader) {
         HashSet<String> readBooks = new HashSet<>();
-        LinkedList<Book> loanHistory = reader.getLoanHistoryList();
 
+        // FUENTE 1: Libros del historial de préstamos
+        LinkedList<Book> loanHistory = reader.getLoanHistoryList();
         for (Book book : loanHistory) {
             readBooks.add(book.getIdBook());
         }
+
+        // FUENTE 2: Libros que han sido valorados (NUEVA LÓGICA)
+        LinkedList<Rating> ratings = reader.getRatingsList();
+        for (Rating rating : ratings) {
+            readBooks.add(rating.getBook().getIdBook());
+        }
+
+        System.out.println("📚 Libros leídos por " + reader.getName() + ": " + readBooks.size() +
+                " (préstamos: " + loanHistory.getSize() +
+                ", valorados: " + ratings.getSize() + ")");
 
         return readBooks;
     }

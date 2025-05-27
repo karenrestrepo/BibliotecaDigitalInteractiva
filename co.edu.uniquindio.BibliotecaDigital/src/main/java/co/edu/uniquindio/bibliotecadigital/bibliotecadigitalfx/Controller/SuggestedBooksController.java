@@ -1,10 +1,7 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
-import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Service.BookRecommendationSystem;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
@@ -299,10 +296,13 @@ public class SuggestedBooksController {
                 System.out.println("Cargadas " + filteredRecommendations.getSize() + " recomendaciones para " + currentReader.getName());
             }
 
+            debugRecommendationFiltering();
+
         } catch (Exception e) {
             showAlert("Error", "Error al cargar recomendaciones: " + e.getMessage());
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -406,6 +406,40 @@ public class SuggestedBooksController {
      */
     public void refreshRecommendations() {
         loadBookRecommendations();
+    }
+
+    private void debugRecommendationFiltering() {
+        if (currentReader == null) return;
+
+        System.out.println("🔍 DEBUG - Verificando filtrado de recomendaciones:");
+        System.out.println("   Usuario: " + currentReader.getName());
+
+        // Libros en historial de préstamos
+        LinkedList<Book> loanHistory = currentReader.getLoanHistoryList();
+        System.out.println("   Libros prestados: " + loanHistory.getSize());
+        for (Book book : loanHistory) {
+            System.out.println("     - " + book.getTitle() + " (ID: " + book.getIdBook() + ")");
+        }
+
+        // Libros valorados
+        LinkedList<Rating> ratings = currentReader.getRatingsList();
+        System.out.println("   Libros valorados: " + ratings.getSize());
+        for (Rating rating : ratings) {
+            System.out.println("     - " + rating.getBook().getTitle() +
+                    " (ID: " + rating.getBook().getIdBook() +
+                    ") - " + rating.getStars() + "★");
+        }
+
+        // Verificar recomendaciones resultantes
+        LinkedList<BookRecommendationSystem.BookRecommendation> recommendations =
+                recommendationSystem.getHybridRecommendations(currentReader, 10);
+
+        System.out.println("   Recomendaciones generadas: " + recommendations.getSize());
+        for (BookRecommendationSystem.BookRecommendation rec : recommendations) {
+            System.out.println("     + " + rec.getBook().getTitle() +
+                    " (ID: " + rec.getBook().getIdBook() +
+                    ") - Score: " + String.format("%.2f", rec.getScore()));
+        }
     }
 
     /**

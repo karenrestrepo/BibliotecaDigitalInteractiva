@@ -301,7 +301,15 @@ public class ManageBooksController {
             txtAuthor.setText(selectedBook.getAuthor());
             txtYear.setText(String.valueOf(selectedBook.getYear()));
             txtCategory.setText(selectedBook.getCategory());
-            txtStatus.setText(String.valueOf(selectedBook.getStatus()));
+
+            // Manejo seguro de txtStatus
+            if (txtStatus != null) {
+                txtStatus.setText(String.valueOf(selectedBook.getStatus()));
+            }
+
+            // También actualizar el ComboBox
+            Combostatus.setValue(selectedBook.getStatus());
+
             txtRating.setText(String.valueOf(selectedBook.getAverageRating()));
         }
     }

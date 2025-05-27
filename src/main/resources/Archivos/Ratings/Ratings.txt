@@ -5,3 +5,5 @@ carlos@gmail.com,011,5,Filosófico y profundo
 sofia@gmail.com,012,5,Hermoso y emotivo
 diego@gmail.com,014,4,Retrato de una época
 karen@gmail.com,012,5,Muy bueno
+ana@gmail.com,012,5,Muy bueno
+karen@gmail.com,005,5,Muy bueno

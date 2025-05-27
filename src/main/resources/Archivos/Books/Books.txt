@@ -1,4 +1,5 @@
 # Archivo de libros - ID,Título,Autor,Año,Categoría
+015,Tierra de hombres,Antoine de Saint-Exupéry,1939,Biografía
 001,El Quijote,Miguel de Cervantes,1605,Clásico
 002,Cien Años de Soledad,Gabriel García Márquez,1967,Realismo Mágico
 003,Orgullo y Prejuicio,Jane Austen,1813,Romance
@@ -13,3 +14,38 @@
 012,El Principito,Antoine de Saint-Exupéry,1943,Infantil
 013,Madame Bovary,Gustave Flaubert,1857,Realismo
 014,El Gran Gatsby,F. Scott Fitzgerald,1925,Ficción Americana
+016,Bajo la misma estrella,John Green,2019,Aventura
+017,Los juegos del hambre,Suzanne Collins,1988,Aventura
+018,It,Stephen King,1825,Romance
+019,Drácula,Bram Stoker,1934,Suspenso
+020,El Alquimista,Paulo Coelho,1847,Aventura
+021,El código Da Vinci,Dan Brown,1850,Clásico
+022,El psicoanalista,John Katzenbach,1819,Suspenso
+023,La sombra del viento,Carlos Ruiz Zafón,1920,Drama
+024,El nombre del viento,Patrick Rothfuss,1804,Aventura
+025,La ladrona de libros,Markus Zusak,1824,Misterio
+026,Los pilares de la tierra,Ken Follett,1820,Misterio
+027,Matar a un ruiseñor,Harper Lee,1877,Aventura
+028,La carretera,Cormac McCarthy,1810,Realismo Mágico
+029,El marciano,Andy Weir,2001,Clásico
+030,Asesinato en el Orient Express,Agatha Christie,1904,Drama
+031,Frankenstein,Mary Shelley,1909,Drama
+032,Jane Eyre,Charlotte Brontë,1905,Aventura
+033,Rebelión en la granja,George Orwell,1995,Realismo Mágico
+034,Fahrenheit 451,Ray Bradbury,1906,Histórico
+035,La isla del tesoro,Robert Louis Stevenson,1950,Realismo Mágico
+036,Los miserables,Victor Hugo,1846,Realismo Mágico
+037,Las aventuras de Sherlock Holmes,Arthur Conan Doyle,1848,Romance
+038,Moby Dick,Herman Melville,1845,Ciencia Ficción
+039,Cumbres borrascosas,Emily Brontë,1955,Misterio
+040,La casa de los espíritus,Isabel Allende,1988,Aventura
+041,Un mundo feliz,Aldous Huxley,1932,Misterio
+042,El lobo estepario,Hermann Hesse,1908,Histórico
+043,Ana Karenina,León Tolstói,1953,Realismo Mágico
+044,El guardián entre el centeno,J.D. Salinger,1972,Realismo Mágico
+045,La chica del tren,Paula Hawkins,1862,Romance
+046,Mil soles espléndidos,Khaled Hosseini,1955,Realismo Mágico
+047,El niño con el pijama de rayas,John Boyne,1943,Clásico
+048,La tregua,Mario Benedetti,1838,Realismo Mágico
+049,Ensayo sobre la ceguera,José Saramago,1858,Misterio
+050,La elegancia del erizo,Muriel Barbery,2002,Romance
