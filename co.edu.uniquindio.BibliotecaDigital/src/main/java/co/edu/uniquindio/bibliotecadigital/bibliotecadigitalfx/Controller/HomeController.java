@@ -6,6 +6,7 @@ import java.util.*;
 
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.LibraryUtil;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.beans.property.SimpleStringProperty;
@@ -77,6 +78,14 @@ public class HomeController {
         listBooks.clear();
         List<Book> books = library.getTitleTree().obtenerListainOrder();
         listBooks.addAll(books);
+
+        // Imprimir estado para debug
+        System.out.println("📚 Libros cargados en tabla: " + books.size());
+        for (Book book : books) {
+            if (book.getStatus() == BookStatus.CHECKED_OUT) {
+                System.out.println("   - " + book.getTitle() + " (PRESTADO)");
+            }
+        }
     }
 
     private void loadBooksOrderedByAuthor() {
@@ -161,16 +170,24 @@ public class HomeController {
 
             Reader reader = (Reader) currentUser;
 
+            // USAR EL MÉTODO MEJORADO que incluye persistencia
             if (reader.requestLoan(book)) {
-                tbBooks.refresh();
+                // ACTUALIZAR TABLAS INMEDIATAMENTE
+                refreshBooksTable();
+
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
-                        "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!");
+                        "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!\n" +
+                                "Recuerda devolverlo en 14 días.");
                 txtSearchBook.clear();
-                myLoansController.refreshLoans();
+
+                // ACTUALIZAR MIS PRÉSTAMOS
+                if (myLoansController != null) {
+                    myLoansController.refreshLoans();
+                }
 
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error de préstamo",
-                        "Ya tienes este libro o alcanzaste el límite de préstamos.");
+                        "No se pudo procesar el préstamo. Verifica que no tengas ya este libro.");
             }
 
         } catch (Exception e) {
@@ -179,6 +196,36 @@ public class HomeController {
             e.printStackTrace();
         }
     }
+
+    /**
+     * NUEVO MÉTODO: Refresca la tabla de libros desde persistencia
+     */
+    public void refreshBooksTable() {
+        try {
+            System.out.println("🔄 Refrescando tabla de libros...");
+
+            // Recargar libros desde persistencia para obtener estados actualizados
+            Persistence persistence = new Persistence();
+            co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap<String, Book> updatedBooks = persistence.loadBooks();
+
+            // Actualizar el árbol de títulos de la biblioteca
+            library.getTitleTree().clear();
+            LinkedList<String> bookKeys = updatedBooks.keySet();
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                Book book = updatedBooks.get(bookKeys.getAmountNodo(i));
+                library.getTitleTree().insert(book);
+            }
+
+            // Recargar la tabla
+            loadBooksOrderedByTitle();
+
+            System.out.println("✅ Tabla de libros actualizada");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error refrescando tabla de libros: " + e.getMessage());
+        }
+    }
+
     private void listenerSelection() {
         tbBooks.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             selectedBook = newSelection;

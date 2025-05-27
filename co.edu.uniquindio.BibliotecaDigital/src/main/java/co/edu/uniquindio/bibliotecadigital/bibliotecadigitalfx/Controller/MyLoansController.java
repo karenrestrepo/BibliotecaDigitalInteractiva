@@ -5,6 +5,7 @@ import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Person;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.HashMap;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util.Persistence;
 import javafx.beans.property.SimpleStringProperty;
@@ -248,23 +249,54 @@ public class MyLoansController {
         }
 
         loansList.clear();
-        LinkedList<Book> loanHistory = currentReader.getLoanHistoryList();
 
-        for (Book book : loanHistory) {
-            // Solo mostrar libros actualmente prestados
-            if (book.getStatus() == BookStatus.CHECKED_OUT) {
-                LoanInfo loanInfo = new LoanInfo(book);
-                loansList.add(loanInfo);
+        try {
+            // Cargar préstamos activos desde persistencia
+            Persistence persistence = new Persistence();
+            HashMap<String, Persistence.LoanRecord> activeLoans = persistence.loadActiveLoans();
+
+            // Filtrar préstamos del usuario actual
+            LinkedList<String> loanKeys = activeLoans.keySet();
+            for (int i = 0; i < loanKeys.getSize(); i++) {
+                String key = loanKeys.getAmountNodo(i);
+                Persistence.LoanRecord loanRecord = activeLoans.get(key);
+
+                if (loanRecord.getReader().getUsername().equals(currentReader.getUsername())) {
+                    // Crear LoanInfo con datos de persistencia
+                    LoanInfo loanInfo = new LoanInfo(loanRecord.getBook(),
+                            loanRecord.getLoanDate(),
+                            loanRecord.getDueDate());
+                    loansList.add(loanInfo);
+
+                    // Sincronizar con el historial del reader en memoria
+                    boolean bookInHistory = false;
+                    for (Book historyBook : currentReader.getLoanHistoryList()) {
+                        if (historyBook.getIdBook().equals(loanRecord.getBook().getIdBook())) {
+                            bookInHistory = true;
+                            break;
+                        }
+                    }
+
+                    if (!bookInHistory) {
+                        currentReader.getLoanHistoryList().add(loanRecord.getBook());
+                    }
+                }
             }
+
+            tbLoans.setItems(loansList);
+
+            // Mostrar resumen
+            updateLoansSummary();
+
+            // Verificar libros próximos a vencer
+            checkUpcomingDueDates();
+
+            System.out.println("✅ Préstamos cargados para " + currentReader.getName() + ": " + loansList.size());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error cargando préstamos: " + e.getMessage());
+            showAlert("Error", "No se pudieron cargar los préstamos: " + e.getMessage());
         }
-
-        tbLoans.setItems(loansList);
-
-        // Mostrar resumen
-        updateLoansSummary();
-
-        // Verificar libros próximos a vencer
-        checkUpcomingDueDates();
     }
 
     /**
@@ -323,7 +355,7 @@ public class MyLoansController {
 
             if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
 
-                // Procesar devolución
+                // Procesar devolución usando el método mejorado de Reader
                 boolean success = currentReader.returnBook(book);
 
                 if (success) {
@@ -342,8 +374,13 @@ public class MyLoansController {
                         askForRating(book);
                     }
 
-                    // Actualizar interfaz
+                    // IMPORTANTE: Recargar préstamos desde persistencia
                     loadCurrentLoans();
+
+                    // Notificar al HomeController si existe la referencia
+                    if (homeController != null) {
+                        homeController.refreshBooksTable(); // Necesitaremos añadir este método
+                    }
 
                 } else {
                     showAlert("Error", "No se pudo procesar la devolución.");
@@ -352,6 +389,7 @@ public class MyLoansController {
 
         } catch (Exception e) {
             showAlert("Error", "Error al devolver el libro: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -554,10 +592,19 @@ public class MyLoansController {
         private LocalDate dueDate;
         private int renewalCount;
 
+        // Constructor original (para compatibilidad)
         public LoanInfo(Book book) {
             this.book = book;
-            this.loanDate = LocalDate.now(); // En una app real, esto vendría de la DB
+            this.loanDate = LocalDate.now();
             this.dueDate = loanDate.plusDays(LOAN_DURATION_DAYS);
+            this.renewalCount = 0;
+        }
+
+        // NUEVO: Constructor con fechas específicas (para persistencia)
+        public LoanInfo(Book book, LocalDate loanDate, LocalDate dueDate) {
+            this.book = book;
+            this.loanDate = loanDate;
+            this.dueDate = dueDate;
             this.renewalCount = 0;
         }
 
