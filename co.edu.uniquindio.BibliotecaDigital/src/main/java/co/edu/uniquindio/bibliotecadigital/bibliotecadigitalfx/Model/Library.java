@@ -503,27 +503,35 @@ public class Library {
         try {
             System.out.println("🔄 Forzando actualización completa de datos...");
 
-            // Recargar desde persistencia
-            Persistence persistence = new Persistence();
-            HashMap<String, Reader> newReaders = persistence.loadReaders();
-            HashMap<String, Book> newBooks = persistence.loadBooks();
+            // Crear nueva instancia de persistencia para asegurar datos frescos
+            Persistence freshPersistence = new Persistence();
 
-            // Limpiar estructuras actuales
+            // Recargar TODOS los datos desde persistencia
+            HashMap<String, Reader> newReaders = freshPersistence.loadReaders();
+            HashMap<String, Book> newBooks = freshPersistence.loadBooks();
+            HashMap<String, Administrator> newAdmins = freshPersistence.loadAdministrators();
+            HashMap<String, Rating> newRatings = freshPersistence.loadRatings();
+
+            // PASO 1: Limpiar estructuras actuales
             readers.clear();
             books.clear();
+            administrators.clear();
+            ratings.clear();
 
-            // Reestablecer datos
+            // PASO 2: Reestablecer datos
             readers = newReaders;
             books = newBooks;
+            administrators = newAdmins;
+            ratings = newRatings;
 
-            // Establecer referencias de biblioteca en lectores
+            // PASO 3: Establecer referencias de biblioteca en lectores
             LinkedList<String> readerKeys = readers.keySet();
             for (int i = 0; i < readerKeys.getSize(); i++) {
                 Reader reader = readers.get(readerKeys.getAmountNodo(i));
                 reader.setLibrary(this);
             }
 
-            // Reconstruir árboles
+            // PASO 4: Reconstruir árboles de búsqueda
             titleTree.clear();
             authorTree.clear();
             categoryTree.clear();
@@ -536,13 +544,89 @@ public class Library {
                 categoryTree.insert(book);
             }
 
+            // PASO 5: CORRECCIÓN CRÍTICA - Reestablecer valoraciones en lectores
+            reestablishRatingsInReaders();
+
             System.out.println("✅ Actualización completa terminada:");
             System.out.println("   - Lectores: " + readers.size());
             System.out.println("   - Libros: " + books.size());
+            System.out.println("   - Administradores: " + administrators.size());
+            System.out.println("   - Valoraciones: " + ratings.size());
 
         } catch (Exception e) {
             System.err.println("❌ Error en actualización forzada: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void reestablishRatingsInReaders() {
+        try {
+            System.out.println("🔄 Reestableciendo valoraciones en lectores...");
+
+            // Primero limpiar todas las listas de valoraciones de los lectores
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.getRatingsList().clear();
+            }
+
+            // Luego redistribuir las valoraciones desde el HashMap global
+            LinkedList<String> ratingKeys = ratings.keySet();
+            int ratingsProcessed = 0;
+
+            for (int i = 0; i < ratingKeys.getSize(); i++) {
+                Rating rating = ratings.get(ratingKeys.getAmountNodo(i));
+                if (rating != null && rating.getReader() != null) {
+                    String username = rating.getReader().getUsername();
+                    Reader reader = readers.get(username);
+
+                    if (reader != null) {
+                        // Verificar que no esté duplicada
+                        boolean alreadyExists = false;
+                        LinkedList<Rating> readerRatings = reader.getRatingsList();
+                        for (Rating existingRating : readerRatings) {
+                            if (existingRating.getBook().getIdBook().equals(rating.getBook().getIdBook())) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyExists) {
+                            reader.getRatingsList().add(rating);
+                            ratingsProcessed++;
+                        }
+                    }
+                }
+            }
+
+            System.out.println("✅ Valoraciones reestablecidas: " + ratingsProcessed + " valoraciones procesadas");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error reestableciendo valoraciones: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Método específico para refrescar solo valoraciones
+     */
+    public void refreshRatingsOnly() {
+        try {
+            System.out.println("🔄 Refrescando solo valoraciones...");
+
+            Persistence persistence = new Persistence();
+            HashMap<String, Rating> newRatings = persistence.loadRatings();
+
+            // Actualizar valoraciones
+            ratings.clear();
+            ratings = newRatings;
+
+            // Reestablecer en lectores
+            reestablishRatingsInReaders();
+
+            System.out.println("✅ Valoraciones refrescadas: " + ratings.size());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error refrescando valoraciones: " + e.getMessage());
         }
     }
 

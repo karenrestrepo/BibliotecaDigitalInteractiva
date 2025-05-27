@@ -78,6 +78,9 @@ public class AffinityNetworkController {
     void initialize() {
         assert PaneGraph != null : "fx:id=\"PaneGraph\" was not injected: check your FXML file 'AffinityNetwork.fxml'.";
 
+        ControllerRegistry.getInstance().registerController("AffinityNetworkController", this);
+        System.out.println("✅ AffinityNetworkController registrado en el registry");
+
         initializeData();
         createAdditionalControls();
         setupGraphVisualization();
@@ -90,14 +93,50 @@ public class AffinityNetworkController {
     private void initializeData() {
         try {
             this.library = Library.getInstance();
+
+            // CORRECCIÓN: Recrear sistema de afinidad con datos frescos
             this.affinitySystem = new AffinitySystem(library);
             this.affinityGraph = affinitySystem.getAffinityGraph();
 
-            System.out.println("Visualización de red de afinidad inicializada");
+            System.out.println("📊 Visualización de red de afinidad inicializada");
+            System.out.println("   - Lectores en el grafo: " +
+                    (affinityGraph != null ? affinityGraph.getVertices().getSize() : 0));
 
         } catch (Exception e) {
+            System.err.println("❌ Error inicializando datos del grafo: " + e.getMessage());
             showAlert("Error", "No se pudo inicializar la visualización de red: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    public void refreshVisualization() {
+        try {
+            // Detener simulación actual
+            if (simulationRunning && simulationTimer != null) {
+                simulationTimer.stop();
+                simulationRunning = false;
+            }
+
+            // CORRECCIÓN: Recrear sistema de afinidad desde cero
+            this.affinitySystem = new AffinitySystem(library);
+            this.affinityGraph = affinitySystem.getAffinityGraph();
+
+            // Recrear visualización
+            setupGraphVisualization();
+            startLayoutSimulation();
+
+            // Animación de entrada
+            javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                    javafx.util.Duration.millis(500), PaneGraph);
+            fadeIn.setFromValue(0.5);
+            fadeIn.setToValue(1.0);
+            fadeIn.play();
+
+            System.out.println("✅ Grafo actualizado desde refreshVisualization");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en refreshVisualization: " + e.getMessage());
+            showAlert("Error", "Error actualizando el grafo: " + e.getMessage());
         }
     }
 
@@ -353,31 +392,6 @@ public class AffinityNetworkController {
         );
 
         networkStatsLabel.setText(stats);
-    }
-
-    /**
-     * Refresca toda la visualización
-     */
-    private void refreshVisualization() {
-        // Detener simulación actual
-        if (simulationRunning && simulationTimer != null) {
-            simulationTimer.stop();
-            simulationRunning = false;
-        }
-
-        // Recrear sistema de afinidad (por si hay nuevos datos)
-        affinitySystem = new AffinitySystem(library);
-        affinityGraph = affinitySystem.getAffinityGraph();
-
-        // Recrear visualización
-        setupGraphVisualization();
-        startLayoutSimulation();
-
-        // Animación de entrada
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(500), PaneGraph);
-        fadeIn.setFromValue(0.5);
-        fadeIn.setToValue(1.0);
-        fadeIn.play();
     }
 
     /**

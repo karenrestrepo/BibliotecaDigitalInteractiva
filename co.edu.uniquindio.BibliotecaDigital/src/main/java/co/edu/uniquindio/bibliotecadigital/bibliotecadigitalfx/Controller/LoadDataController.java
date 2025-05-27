@@ -167,16 +167,12 @@ public class LoadDataController {
 
     private void processSelectedFile(File selectedFile) {
         try {
-            // Validaciones del archivo
             if (!isValidFile(selectedFile)) {
                 return;
             }
 
-            // Determinar tipo de archivo ANTES de procesarlo
             String fileName = selectedFile.getName().toLowerCase();
             String dataType = determineFileType(fileName);
-
-            debugFileContent(selectedFile, dataType);
 
             System.out.println("🔍 Procesando archivo: " + fileName + " (Tipo: " + dataType + ")");
 
@@ -184,18 +180,24 @@ public class LoadDataController {
             Library library = Library.getInstance();
             String result = library.loadDataFromFile(selectedFile);
 
-            // CORRECCIÓN: Actualización específica según el tipo
-            refreshSpecificDataType(dataType, library);
+            // CORRECCIÓN: Forzar actualización de la biblioteca
+            if (result.contains("Se cargaron") && !result.contains("0 ")) {
+                // Solo si realmente se cargaron datos
+                library.forceRefreshAllData();
 
-            // CORRECCIÓN: Notificación específica de controladores
-            notifySpecificControllers(dataType);
+                // Esperar un momento para que los datos se establezcan
+                Thread.sleep(500);
 
-            // Mostrar resultado
-            showAlert("Resultado de la carga", result);
+                // CORRECCIÓN: Notificación específica de controladores
+                notifySpecificControllers(dataType);
 
-            // Log para debugging
+                // Mostrar resultado
+                showAlert("Resultado de la carga", result + "\n\n✅ Interfaces actualizadas correctamente.");
+            } else {
+                showAlert("Resultado de la carga", result);
+            }
+
             System.out.println("✅ Archivo procesado exitosamente: " + selectedFile.getName());
-            System.out.println("Resultado: " + result);
 
         } catch (Exception e) {
             showAlert("Error", "Ocurrió un error al procesar el archivo: " + e.getMessage());
@@ -260,30 +262,94 @@ public class LoadDataController {
         }
     }
 
-    /**
-     * CORRECCIÓN: Notificar solo controladores relevantes
-     */
     private void notifySpecificControllers(String dataType) {
         ControllerRegistry registry = ControllerRegistry.getInstance();
+        System.out.println("🔔 Notificando controladores para tipo: " + dataType);
 
         switch (dataType) {
             case "readers":
                 updateUserManagementController(registry);
+                // También actualizar estadísticas porque afecta el conteo
+                updateStatisticsController(registry);
                 break;
 
             case "books":
                 updateBooksManagementController(registry);
-                break;
-
-            case "ratings":
-            case "connections":
+                // También actualizar estadísticas porque afecta las valoraciones
                 updateStatisticsController(registry);
                 break;
 
+            case "ratings":
+                // CORRECCIÓN CRÍTICA: Las valoraciones afectan tanto estadísticas como grafo
+                updateStatisticsControllerAfterRatings(registry);
+                updateAffinityNetworkController(registry);
+                break;
+
+            case "connections":
+                // CORRECCIÓN CRÍTICA: Las conexiones afectan el grafo directamente
+                updateAffinityNetworkController(registry);
+                updateStatisticsControllerAfterConnections(registry);
+                break;
+
             case "auto":
-                // Solo para auto-detección actualizar todo
+                // Para auto-detección actualizar todo
                 updateAllControllers(registry);
                 break;
+
+            default:
+                System.out.println("⚠️ Tipo de datos no reconocido: " + dataType);
+                break;
+        }
+    }
+
+    /**
+     * NUEVO: Actualizar controlador de estadísticas específicamente después de cargar valoraciones
+     */
+    private void updateStatisticsControllerAfterRatings(ControllerRegistry registry) {
+        try {
+            LibraryStatsController statsController = registry.getController("LibraryStatsController", LibraryStatsController.class);
+            if (statsController != null) {
+                statsController.refreshAfterRatingsLoaded();
+                System.out.println("✅ Estadísticas actualizadas tras cargar valoraciones");
+            } else {
+                System.err.println("⚠️ LibraryStatsController no encontrado");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando estadísticas tras valoraciones: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Actualizar controlador de estadísticas específicamente después de cargar conexiones
+     */
+    private void updateStatisticsControllerAfterConnections(ControllerRegistry registry) {
+        try {
+            LibraryStatsController statsController = registry.getController("LibraryStatsController", LibraryStatsController.class);
+            if (statsController != null) {
+                statsController.refreshAfterConnectionsLoaded();
+                System.out.println("✅ Estadísticas actualizadas tras cargar conexiones");
+            } else {
+                System.err.println("⚠️ LibraryStatsController no encontrado");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando estadísticas tras conexiones: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Actualizar controlador del grafo de afinidad
+     */
+    private void updateAffinityNetworkController(ControllerRegistry registry) {
+        try {
+            AffinityNetworkController affinityController = registry.getController("AffinityNetworkController", AffinityNetworkController.class);
+            if (affinityController != null) {
+                affinityController.refreshVisualization();
+                System.out.println("✅ Grafo de afinidad actualizado");
+            } else {
+                System.err.println("⚠️ AffinityNetworkController no encontrado");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando grafo de afinidad: " + e.getMessage());
         }
     }
 

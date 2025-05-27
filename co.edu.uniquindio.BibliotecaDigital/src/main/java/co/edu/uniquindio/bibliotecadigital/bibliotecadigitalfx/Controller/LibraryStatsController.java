@@ -98,8 +98,27 @@ public class LibraryStatsController {
     }
     @FXML
     void onActualizar(ActionEvent event) {
-        setupComboBoxes();
-        loadAllStatistics();
+        // NUEVO: Primero forzar recarga de datos desde persistencia
+        try {
+            System.out.println("🔄 Actualizando datos desde persistencia...");
+
+            // Recargar la biblioteca desde persistencia
+            Library library = Library.getInstance();
+            library.forceRefreshAllData();
+
+            // Recrear el sistema de afinidad con datos frescos
+            this.affinitySystem = new AffinitySystem(library);
+
+            // Actualizar todas las interfaces
+            setupComboBoxes();
+            loadAllStatistics();
+
+            System.out.println("✅ Datos actualizados correctamente");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando datos: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -351,6 +370,44 @@ public class LibraryStatsController {
         }
 
         tableLoans.setItems(filteredItems);
+    }
+
+    public void refreshAfterRatingsLoaded() {
+        try {
+            System.out.println("🔄 Refrescando estadísticas después de cargar valoraciones...");
+
+            // Recrear sistema de afinidad porque las valoraciones pueden cambiar las conexiones
+            this.affinitySystem = new AffinitySystem(library);
+
+            // Recargar todas las estadísticas
+            loadAllStatistics();
+            setupComboBoxes();
+
+            System.out.println("✅ Estadísticas actualizadas tras cargar valoraciones");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error refrescando estadísticas: " + e.getMessage());
+        }
+    }
+
+    // NUEVO: Método específico para actualizar después de cargar conexiones
+    public void refreshAfterConnectionsLoaded() {
+        try {
+            System.out.println("🔄 Refrescando grafo después de cargar conexiones...");
+
+            // Recrear sistema de afinidad
+            this.affinitySystem = new AffinitySystem(library);
+
+            // Recargar estadísticas que dependen del grafo
+            loadConnectionStatistics();
+            loadClusterStatistics();
+            setupComboBoxes();
+
+            System.out.println("✅ Grafo actualizado tras cargar conexiones");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error refrescando grafo: " + e.getMessage());
+        }
     }
 
     /**
