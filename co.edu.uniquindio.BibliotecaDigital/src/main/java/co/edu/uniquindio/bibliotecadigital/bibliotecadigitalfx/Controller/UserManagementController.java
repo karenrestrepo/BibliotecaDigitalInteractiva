@@ -271,16 +271,15 @@ public class UserManagementController {
     private void listenerSelection() {
         tableReader.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             readerSelect = newSelection;
-            showUserInformation(readerSelect);
+            if (readerSelect != null) {
+                populateFields(readerSelect);
+            } else {
+                clearFields(); // Limpiar campos si no hay selección
+            }
         });
     }
 
-    private void showUserInformation(Reader readerSelect) {
-        if (this.readerSelect != null) {
-            txtUser.setText(readerSelect.getName());
 
-        }
-    }
 
 
     private void clearFields() {
