@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 /**
  * Controlador para gestionar los préstamos personales del lector
@@ -78,7 +80,13 @@ public class MyLoansController {
 
     @FXML
     void onRefresh(ActionEvent event) {
-        updateTable();
+        System.out.println("🔄 Usuario presionó botón Refresh");
+
+        // Primero hacer debug para diagnosticar
+        debugLoansState();
+
+        // Luego hacer el refresh
+        refreshLoans();
     }
 
     @FXML
@@ -86,17 +94,27 @@ public class MyLoansController {
         System.out.println("🔄 Inicializando MyLoansController...");
 
         try {
+            // PASO 1: Inicializar datos del usuario
             initializeUserData();
+
+            // PASO 2: Configurar tabla
             setupTableColumns();
             setupSelectionListener();
 
-            if (currentReader != null) {
-                currentReader.syncLoanHistoryFromPersistence();
+            // PASO 3: Verificar que tenemos un usuario válido ANTES de continuar
+            if (currentReader == null) {
+                System.err.println("❌ No se pudo obtener usuario actual");
+                disableInterface();
+                return;
             }
 
-            // CORRECCIÓN: Cargar préstamos con delay para asegurar que todo esté listo
+            // PASO 4: Sincronizar con persistencia
+            currentReader.syncLoanHistoryFromPersistence();
+
+            // PASO 5: Cargar préstamos con delay para asegurar que todo esté listo
             Platform.runLater(() -> {
                 try {
+                    Thread.sleep(200); // Pequeño delay para asegurar inicialización
                     loadCurrentLoans();
                     setupPeriodicChecks();
                     System.out.println("✅ MyLoansController inicializado completamente");
@@ -109,6 +127,7 @@ public class MyLoansController {
         } catch (Exception e) {
             System.err.println("❌ Error en inicialización de MyLoansController: " + e.getMessage());
             e.printStackTrace();
+            disableInterface();
         }
     }
 
@@ -133,6 +152,43 @@ public class MyLoansController {
         } catch (Exception e) {
             showAlert("Error", "No se pudo inicializar el gestor de préstamos: " + e.getMessage());
             disableInterface();
+        }
+    }
+
+    private void verifyDataConsistency() {
+        try {
+            System.out.println("🔍 Verificando consistencia de datos...");
+
+            // Verificar que loansList y tabla coincidan
+            int listSize = loansList != null ? loansList.size() : 0;
+            int tableSize = tbLoans.getItems() != null ? tbLoans.getItems().size() : 0;
+
+            if (listSize != tableSize) {
+                System.err.println("⚠️ INCONSISTENCIA: loansList tiene " + listSize +
+                        " elementos pero tabla tiene " + tableSize);
+
+                // Forzar sincronización
+                if (loansList != null) {
+                    tbLoans.setItems(loansList);
+                    tbLoans.refresh();
+                }
+            }
+
+            // Verificar duplicados en loansList
+            if (loansList != null) {
+                Set<String> seenBooks = new HashSet<>();
+                for (LoanInfo loan : loansList) {
+                    String bookId = loan.getBook().getIdBook();
+                    if (seenBooks.contains(bookId)) {
+                        System.err.println("⚠️ DUPLICADO DETECTADO en loansList: " + bookId);
+                    } else {
+                        seenBooks.add(bookId);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error verificando consistencia: " + e.getMessage());
         }
     }
 
@@ -269,49 +325,73 @@ public class MyLoansController {
      */
     private void loadCurrentLoans() {
         if (currentReader == null) {
+            System.err.println("❌ currentReader es null en loadCurrentLoans");
             return;
         }
 
-        System.out.println("🔄 Cargando préstamos para: " + currentReader.getName());
+        System.out.println("🔄 Cargando préstamos para: " + currentReader.getName() + " (" + currentReader.getUsername() + ")");
 
         try {
-            // CORRECCIÓN: Limpiar ANTES de cargar para evitar duplicados
+            // PASO 1: Limpiar COMPLETAMENTE la lista
             loansList.clear();
 
+            // PASO 2: Verificar que la tabla esté limpia
+            if (tbLoans.getItems() != null) {
+                tbLoans.getItems().clear();
+            }
+
+            // PASO 3: Cargar desde persistencia
             Persistence persistence = new Persistence();
             HashMap<String, Persistence.LoanRecord> activeLoans = persistence.loadActiveLoans();
 
-            // Filtrar préstamos del usuario actual
+            System.out.println("📊 Total préstamos en archivo: " + activeLoans.size());
+
+            // PASO 4: Filtrar solo préstamos del usuario actual con verificación extra
             LinkedList<String> loanKeys = activeLoans.keySet();
+            int loansForCurrentUser = 0;
+
             for (int i = 0; i < loanKeys.getSize(); i++) {
                 String key = loanKeys.getAmountNodo(i);
                 Persistence.LoanRecord loanRecord = activeLoans.get(key);
 
-                if (loanRecord.getReader().getUsername().equals(currentReader.getUsername())) {
+                // VERIFICACIÓN EXTRA: Comparar username exactamente
+                String loanUsername = loanRecord.getReader().getUsername().trim();
+                String currentUsername = currentReader.getUsername().trim();
+
+                if (loanUsername.equals(currentUsername)) {
                     Book book = loanRecord.getBook();
-                    book.setStatus(BookStatus.CHECKED_OUT);
 
-                    LoanInfo loanInfo = new LoanInfo(book,
-                            loanRecord.getLoanDate(),
-                            loanRecord.getDueDate());
-                    loansList.add(loanInfo);
+                    // VERIFICACIÓN ANTI-DUPLICADOS: Comprobar si ya está en la lista
+                    boolean alreadyExists = false;
+                    for (LoanInfo existingLoan : loansList) {
+                        if (existingLoan.getBook().getIdBook().equals(book.getIdBook())) {
+                            alreadyExists = true;
+                            System.out.println("⚠️ Préstamo duplicado detectado y omitido: " + book.getTitle());
+                            break;
+                        }
+                    }
 
-                    System.out.println("📚 Préstamo cargado: " + book.getTitle() +
-                            " (vence: " + loanRecord.getDueDate() + ")");
+                    if (!alreadyExists) {
+                        book.setStatus(BookStatus.CHECKED_OUT);
+                        LoanInfo loanInfo = new LoanInfo(book, loanRecord.getLoanDate(), loanRecord.getDueDate());
+                        loansList.add(loanInfo);
+                        loansForCurrentUser++;
+
+                        System.out.println("📚 Préstamo válido cargado: " + book.getTitle() +
+                                " (vence: " + loanRecord.getDueDate() + ")");
+                    }
                 }
             }
 
-            // IMPORTANTE: NO modificar el historial del reader aquí
-            // El historial se maneja en el momento del préstamo/devolución
-
-            // Actualizar tabla
+            // PASO 5: Actualizar tabla una sola vez
             tbLoans.setItems(loansList);
-            tbLoans.refresh(); // NUEVO: Forzar refresh visual
+            tbLoans.refresh();
 
+            // PASO 6: Actualizar resumen y verificaciones
             updateLoansSummary();
             checkUpcomingDueDates();
 
-            System.out.println("✅ Préstamos cargados desde persistencia: " + loansList.size());
+            System.out.println("✅ Préstamos cargados correctamente: " + loansForCurrentUser + " préstamos únicos");
 
         } catch (Exception e) {
             System.err.println("❌ Error cargando préstamos: " + e.getMessage());
@@ -325,22 +405,52 @@ public class MyLoansController {
      */
     public void refreshLoans() {
         try {
-            System.out.println("🔄 Refrescando préstamos desde persistencia...");
+            System.out.println("🔄 REFRESH iniciado por usuario...");
 
-            // Recargar desde persistencia (fuente de verdad)
-            loadCurrentLoans();
+            // IMPORTANTE: Verificar que tenemos un usuario válido
+            if (currentReader == null) {
+                System.err.println("❌ No hay usuario actual para refresh");
+                showAlert("Error", "No hay usuario activo. Por favor reinicia sesión.");
+                return;
+            }
 
-            // Forzar actualización visual
+            // LIMPIAR COMPLETAMENTE antes de recargar
+            if (loansList != null) {
+                loansList.clear();
+            }
+            if (tbLoans.getItems() != null) {
+                tbLoans.getItems().clear();
+            }
+
+            // Forzar actualización visual inmediata
             Platform.runLater(() -> {
-                tbLoans.refresh();
-                System.out.println("✅ Tabla de préstamos refrescada: " + loansList.size() + " préstamos");
+                try {
+                    // RECARGAR desde persistencia
+                    loadCurrentLoans();
+
+                    // VERIFICACIÓN FINAL
+                    System.out.println("✅ Refresh completado - Préstamos en tabla: " + tbLoans.getItems().size());
+
+                    // Mostrar mensaje de confirmación al usuario
+                    if (tbLoans.getItems().size() == 0) {
+                        showAlert("Información", "No tienes préstamos activos actualmente.");
+                    } else {
+                        System.out.println("📋 Préstamos actualizados exitosamente");
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("❌ Error en refresh tardío: " + e.getMessage());
+                    showAlert("Error", "Error actualizando préstamos: " + e.getMessage());
+                }
             });
 
         } catch (Exception e) {
             System.err.println("❌ Error en refreshLoans: " + e.getMessage());
             e.printStackTrace();
+            showAlert("Error", "Error refrescando préstamos: " + e.getMessage());
         }
     }
+
 
     /**
      * Actualiza el resumen de préstamos en la interfaz
@@ -522,6 +632,32 @@ public class MyLoansController {
 
         if (ratingPrompt.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             rateBook(new LoanInfo(book));
+        }
+    }
+
+    public void debugLoansState() {
+        try {
+            System.out.println("🔍 DEBUG - Estado de préstamos:");
+            System.out.println("   - Usuario actual: " + (currentReader != null ? currentReader.getName() : "NULL"));
+            System.out.println("   - Username: " + (currentReader != null ? currentReader.getUsername() : "NULL"));
+            System.out.println("   - Items en loansList: " + (loansList != null ? loansList.size() : "NULL"));
+            System.out.println("   - Items en tabla: " + (tbLoans.getItems() != null ? tbLoans.getItems().size() : "NULL"));
+
+            if (loansList != null && loansList.size() > 0) {
+                System.out.println("   - Préstamos en memoria:");
+                for (int i = 0; i < loansList.size(); i++) {
+                    LoanInfo loan = loansList.get(i);
+                    System.out.println("     " + (i+1) + ". " + loan.getBook().getTitle() +
+                            " (" + loan.getBook().getIdBook() + ")");
+                }
+            }
+
+            // También verificar persistencia
+            Persistence persistence = new Persistence();
+            persistence.debugLoansState();
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en debug: " + e.getMessage());
         }
     }
 

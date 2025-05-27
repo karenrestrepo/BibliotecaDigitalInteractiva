@@ -43,24 +43,50 @@ public class HomeController {
 
     @FXML
     void initialize() throws IOException {
-        library = LibraryUtil.initializeData();
-        listenerSelection();
-        initTable();
-        loadBooksOrderedByTitle(); // Carga inicial
-        setupLiveSearch();         // Búsqueda en tiempo real
-        loadController();
+        System.out.println("🔄 Inicializando HomeController...");
+
+        try {
+            library = LibraryUtil.initializeData();
+            listenerSelection();
+            initTable();
+            loadBooksOrderedByTitle(); // Carga inicial
+            setupLiveSearch();         // Búsqueda en tiempo real
+
+            // CORRECCIÓN: Cargar controlador con delay para asegurar inicialización
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    Thread.sleep(500); // Esperar a que todo se inicialice
+                    loadController();
+                    System.out.println("✅ HomeController inicializado completamente");
+                } catch (Exception e) {
+                    System.err.println("❌ Error en inicialización tardía de HomeController: " + e.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en inicialización de HomeController: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void loadController() {
         try {
+            System.out.println("🔄 Cargando MyLoansController...");
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/co/edu/uniquindio/bibliotecadigital/bibliotecadigitalfx/MyLoans.fxml"));
-            Parent loansRoot = loader.load(); // Solo carga, no lo muestras
+            Parent loansRoot = loader.load(); // Solo carga, no lo muestra
 
             MyLoansController myLoans = loader.getController();
-            this.setMyLoansController(myLoans);        // ← establecer referencia
-            myLoans.setHomeController(this);           // ← conexión cruzada
+
+            if (myLoans != null) {
+                this.setMyLoansController(myLoans);
+                System.out.println("✅ MyLoansController cargado y conectado exitosamente");
+            } else {
+                System.err.println("❌ No se pudo obtener MyLoansController del loader");
+            }
 
         } catch (IOException e) {
+            System.err.println("❌ Error cargando MyLoansController: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -182,29 +208,61 @@ public class HomeController {
                 // 1. Actualizar tabla de libros INMEDIATAMENTE
                 refreshBooksTable();
 
-                // 2. Actualizar tabla de préstamos INMEDIATAMENTE
+                // 2. CORRECCIÓN: Actualizar tabla de préstamos con delay para asegurar persistencia
                 if (myLoansController != null) {
-                    myLoansController.refreshLoans();
-                    System.out.println("✅ Tabla de préstamos actualizada");
+                    // Usar Platform.runLater para asegurar que la persistencia se complete primero
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            // Pequeño delay para asegurar que la persistencia se haya completado
+                            Thread.sleep(300);
+
+                            // Forzar refresh completo
+                            myLoansController.refreshLoans();
+
+                            System.out.println("✅ Tabla de préstamos actualizada tras delay");
+                        } catch (Exception e) {
+                            System.err.println("⚠️ Error en actualización tardía de préstamos: " + e.getMessage());
+                        }
+                    });
                 } else {
                     System.err.println("⚠️ MyLoansController no disponible");
                 }
 
+                // 3. Mostrar confirmación al usuario
                 showAlert(Alert.AlertType.INFORMATION, "Préstamo exitoso",
                         "¡Has obtenido el préstamo de \"" + book.getTitle() + "\"!\n" +
-                                "Recuerda devolverlo en 14 días.");
+                                "Recuerda devolverlo en 14 días.\n\n" +
+                                "💡 Ve a 'Panel personal > Mis préstamos' para ver todos tus préstamos.");
 
                 txtSearchBook.clear();
 
             } else {
                 showAlert(Alert.AlertType.ERROR, "Error de préstamo",
-                        "No se pudo procesar el préstamo.");
+                        "No se pudo procesar el préstamo. Intenta nuevamente.");
             }
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error del sistema",
                     "Ocurrió un error inesperado: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    public void forceLoansRefresh() {
+        if (myLoansController != null) {
+            System.out.println("🔄 Forzando actualización completa de préstamos...");
+
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    myLoansController.debugLoansState(); // Para diagnosticar
+                    myLoansController.refreshLoans();
+                    System.out.println("✅ Actualización forzada completada");
+                } catch (Exception e) {
+                    System.err.println("❌ Error en actualización forzada: " + e.getMessage());
+                }
+            });
+        } else {
+            System.err.println("⚠️ No se puede forzar refresh - MyLoansController no disponible");
         }
     }
 
@@ -276,6 +334,13 @@ public class HomeController {
     }
     public void setMyLoansController(MyLoansController myLoansController) {
         this.myLoansController = myLoansController;
+        System.out.println("🔗 MyLoansController conectado a HomeController");
+
+        // Verificar que la conexión sea bidireccional
+        if (myLoansController != null) {
+            myLoansController.setHomeController(this);
+            System.out.println("🔗 Conexión bidireccional establecida correctamente");
+        }
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
