@@ -12,6 +12,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.ResourceBundle;
@@ -185,27 +188,38 @@ public class LibraryStatsController {
      * Complejidad: O(n log n) donde n es el número de lectores
      */
     private void loadLoanStatistics() {
-        LinkedList<Reader> readers = library.getReadersList();
-        LinkedList<LoanStatistic> loanStats = new LinkedList<>();
+        String rutaArchivo = "src/main/resources/Archivos/Loans/Loans.txt";
+        java.util.HashMap<String, Integer> conteoPrestamos = new java.util.HashMap<>();
 
-        // Calcular estadísticas para cada lector
-        for (Reader reader : readers) {
-            int loanCount = reader.getLoanHistoryList().getSize();
-            loanStats.add(new LoanStatistic(reader.getName(), loanCount));
+        try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+
+                String[] partes = linea.split(",");
+                if (partes.length >= 1) {
+                    String correo = partes[0].trim();
+                    conteoPrestamos.put(correo, conteoPrestamos.getOrDefault(correo, 0) + 1);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo préstamos: " + e.getMessage());
+            return;
         }
 
-        // Ordenar por número de préstamos (algoritmo de inserción optimizado)
-        LoanStatistic[] statsArray = convertToArray(loanStats);
-        insertionSortByLoans(statsArray);
-
-        // Convertir a ObservableList para JavaFX
-        ObservableList<LoanStatistic> observableStats = FXCollections.observableArrayList();
-        for (LoanStatistic stat : statsArray) {
-            observableStats.add(stat);
+        // Convertir a lista de LoanStatistic
+        ObservableList<LoanStatistic> stats = FXCollections.observableArrayList();
+        for (String correo : conteoPrestamos.keySet()) {
+            stats.add(new LoanStatistic(correo, conteoPrestamos.get(correo)));
         }
 
-        tableLoans.setItems(observableStats);
+        // Ordenar (opcional, mayor a menor)
+        stats.sort((a, b) -> Integer.compare(b.getLoanCount(), a.getLoanCount()));
+
+        // Mostrar en la tabla
+        tableLoans.setItems(stats);
     }
+
 
     /**
      * Análisis de libros mejor valorados
@@ -213,27 +227,51 @@ public class LibraryStatsController {
      * Conceptos: Manejo de promedios y ordenamiento por múltiples criterios
      */
     private void loadRatingStatistics() {
-        LinkedList<Book> books = library.getBookssList();
-        LinkedList<RatingStatistic> ratingStats = new LinkedList<>();
+        String rutaArchivo = "src/main/resources/Archivos/Ratings/Ratings.txt";
+        java.util.HashMap<String, java.util.List<Integer>> mapaValoraciones = new java.util.HashMap<>();
 
-        for (Book book : books) {
-            // Solo incluir libros que han sido valorados
-            if (book.getAverageRating() > 0) {
-                ratingStats.add(new RatingStatistic(book.getTitle(), book.getAverageRating()));
+        try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+
+                String[] partes = linea.split(",");
+                if (partes.length >= 3) {
+                    String idLibro = partes[1].trim();
+                    int estrellas = Integer.parseInt(partes[2].trim());
+
+                    mapaValoraciones
+                            .computeIfAbsent(idLibro, k -> new java.util.ArrayList<>())
+                            .add(estrellas);
+                }
             }
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo valoraciones: " + e.getMessage());
+            return;
         }
 
-        // Ordenar por valoración promedio
-        RatingStatistic[] statsArray = convertRatingToArray(ratingStats);
-        insertionSortByRating(statsArray);
-
-        ObservableList<RatingStatistic> observableStats = FXCollections.observableArrayList();
-        for (RatingStatistic stat : statsArray) {
-            observableStats.add(stat);
+        // Obtener títulos desde la lista de libros actual (usamos el modelo para el título solamente)
+        java.util.HashMap<String, String> mapaTitulos = new java.util.HashMap<>();
+        for (Book libro : library.getBookssList()) {
+            mapaTitulos.put(libro.getIdBook(), libro.getTitle());
         }
 
-        tableRating.setItems(observableStats);
+        // Convertir a lista de RatingStatistic con promedio
+        ObservableList<RatingStatistic> stats = FXCollections.observableArrayList();
+
+        for (String idLibro : mapaValoraciones.keySet()) {
+            java.util.List<Integer> estrellas = mapaValoraciones.get(idLibro);
+            double promedio = estrellas.stream().mapToInt(i -> i).average().orElse(0.0);
+            String titulo = mapaTitulos.getOrDefault(idLibro, "Libro " + idLibro);
+            stats.add(new RatingStatistic(titulo, promedio));
+        }
+
+        // Ordenar de mayor a menor
+        stats.sort((a, b) -> Double.compare(b.getAverageRating(), a.getAverageRating()));
+
+        tableRating.setItems(stats);
     }
+
 
     /**
      * Análisis de conexiones en el grafo de afinidad
