@@ -63,10 +63,11 @@ public class AffinityNetworkController {
     // Configuración de visualización
     private static final double NODE_RADIUS = 15.0;
     private static final double EDGE_THICKNESS = 2.0;
-    private static final double FORCE_STRENGTH = 0.5;
-    private static final double REPULSION_STRENGTH = 100.0;
-    private static final double ATTRACTION_STRENGTH = 0.01;
-    private static final int MAX_ITERATIONS = 1000;
+    private static final double FORCE_STRENGTH = 0.8;
+    private static final double REPULSION_STRENGTH = 500.0;
+    private static final double ATTRACTION_STRENGTH = 0.005;
+    private static final int MAX_ITERATIONS = 1500;
+    private static final double MIN_DISTANCE = 80.0;
 
     // Estado de la simulación
     private AnimationTimer simulationTimer;
@@ -248,18 +249,47 @@ public class AffinityNetworkController {
 
         double centerX = PaneGraph.getPrefWidth() / 2;
         double centerY = PaneGraph.getPrefHeight() / 2;
-        double radius = Math.min(centerX, centerY) * 0.7;
 
-        for (int i = 0; i < nodes.size(); i++) {
-            double angle = 2 * Math.PI * i / nodes.size();
-            double x = centerX + radius * Math.cos(angle);
-            double y = centerY + radius * Math.sin(angle);
+        // Calcular radio basado en el número de nodos para mejor distribución
+        double baseRadius = Math.min(centerX, centerY) * 0.6;
+        double radius = Math.max(baseRadius, nodes.size() * 15.0); // Radio dinámico
 
-            NodeVisual node = nodes.get(i);
-            node.setPosition(x, y);
+        // Si hay muchos nodos, usar múltiples círculos concéntricos
+        if (nodes.size() > 12) {
+            layoutMultipleCircles(nodes, centerX, centerY, baseRadius);
+        } else {
+            // Layout circular simple para pocos nodos
+            for (int i = 0; i < nodes.size(); i++) {
+                double angle = 2 * Math.PI * i / nodes.size();
+                double x = centerX + radius * Math.cos(angle);
+                double y = centerY + radius * Math.sin(angle);
+
+                NodeVisual node = nodes.get(i);
+                node.setPosition(x, y);
+            }
         }
 
         updateEdgePositions();
+    }
+    private void layoutMultipleCircles(List<NodeVisual> nodes, double centerX, double centerY, double baseRadius) {
+        int nodesPerCircle = 8; // Máximo 8 nodos por círculo
+        int numCircles = (int) Math.ceil((double) nodes.size() / nodesPerCircle);
+
+        int nodeIndex = 0;
+        for (int circle = 0; circle < numCircles && nodeIndex < nodes.size(); circle++) {
+            double radius = baseRadius + (circle * 80); // 80px entre círculos
+            int nodesInThisCircle = Math.min(nodesPerCircle, nodes.size() - nodeIndex);
+
+            for (int i = 0; i < nodesInThisCircle && nodeIndex < nodes.size(); i++) {
+                double angle = 2 * Math.PI * i / nodesInThisCircle;
+                double x = centerX + radius * Math.cos(angle);
+                double y = centerY + radius * Math.sin(angle);
+
+                NodeVisual node = nodes.get(nodeIndex);
+                node.setPosition(x, y);
+                nodeIndex++;
+            }
+        }
     }
 
     /**
@@ -306,20 +336,27 @@ public class AffinityNetworkController {
         for (NodeVisual node : nodes) {
             double fx = 0, fy = 0;
 
-            // Fuerza de repulsión con otros nodos
+            // Fuerza de repulsión con otros nodos (MEJORADA)
             for (NodeVisual other : nodes) {
                 if (node != other) {
                     double dx = node.getX() - other.getX();
                     double dy = node.getY() - other.getY();
-                    double distance = Math.max(Math.sqrt(dx * dx + dy * dy), 1.0);
+                    double distance = Math.max(Math.sqrt(dx * dx + dy * dy), 10.0); // Distancia mínima aumentada
 
+                    // Aplicar repulsión más fuerte para distancias cortas
                     double force = REPULSION_STRENGTH / (distance * distance);
+
+                    // Bonus de repulsión si están muy cerca
+                    if (distance < MIN_DISTANCE) {
+                        force *= 2.0; // Duplicar la fuerza si están muy cerca
+                    }
+
                     fx += force * dx / distance;
                     fy += force * dy / distance;
                 }
             }
 
-            // Fuerza de atracción con nodos conectados
+            // Fuerza de atracción con nodos conectados (AJUSTADA)
             HashSet<Reader> connections = affinityGraph.getAdjacentVertices(node.getReader());
             if (connections != null) {
                 for (Reader connectedReader : connections) {
@@ -329,9 +366,12 @@ public class AffinityNetworkController {
                         double dy = connectedNode.getY() - node.getY();
                         double distance = Math.sqrt(dx * dx + dy * dy);
 
-                        double force = ATTRACTION_STRENGTH * distance;
-                        fx += force * dx / distance;
-                        fy += force * dy / distance;
+                        // Solo aplicar atracción si están muy lejos
+                        if (distance > MIN_DISTANCE * 1.5) {
+                            double force = ATTRACTION_STRENGTH * distance;
+                            fx += force * dx / distance;
+                            fy += force * dy / distance;
+                        }
                     }
                 }
             }
@@ -347,11 +387,10 @@ public class AffinityNetworkController {
         }
     }
 
-    /**
-     * Mantiene los nodos dentro de los límites del panel
-     */
+    // MÉTODO MEJORADO: constrainToPane()
+// Reemplaza tu método existente con este:
     private void constrainToPane(NodeVisual node) {
-        double margin = NODE_RADIUS + 10;
+        double margin = NODE_RADIUS + 20; // Aumentado el margen
         double maxX = PaneGraph.getPrefWidth() - margin;
         double maxY = PaneGraph.getPrefHeight() - margin;
 
@@ -360,6 +399,7 @@ public class AffinityNetworkController {
         if (node.getY() < margin) node.setY(margin);
         if (node.getY() > maxY) node.setY(maxY);
     }
+
 
     /**
      * Actualiza las posiciones de todas las aristas
@@ -561,11 +601,16 @@ public class AffinityNetworkController {
         }
 
         public void updatePosition() {
-            // Aplicar velocidad con amortiguación
+            // Aplicar velocidad con amortiguación más suave
             x += vx;
             y += vy;
-            vx *= 0.9; // Factor de amortiguación
-            vy *= 0.9;
+            vx *= 0.85; // Factor de amortiguación ajustado (era 0.9)
+            vy *= 0.85;
+
+            // Limitar velocidad máxima para evitar movimientos bruscos
+            double maxVelocity = 5.0;
+            if (Math.abs(vx) > maxVelocity) vx = Math.signum(vx) * maxVelocity;
+            if (Math.abs(vy) > maxVelocity) vy = Math.signum(vy) * maxVelocity;
 
             setPosition(x, y);
         }

@@ -6,6 +6,5 @@ Ana,ana@gmail.com,Ana123
 Juliana,july@.com,2020
 Antonio,antonio@gmail.com,8989
 Vanessa,vane@gmail.com,1234
-
 Carlos Mendoza,carlos@gmail.com,carlos123
 Sofia Ramirez,sofia@gmail.com,sofia456
