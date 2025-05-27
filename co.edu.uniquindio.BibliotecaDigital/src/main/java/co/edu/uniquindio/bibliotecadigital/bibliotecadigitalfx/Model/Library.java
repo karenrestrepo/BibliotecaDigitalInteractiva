@@ -15,6 +15,7 @@ public class Library {
 
     // UNIFICADO: Una sola fuente de verdad para cada tipo de dato
     private HashMap<String, Reader> readers = new HashMap<>();
+    private HashMap<String, Rating> ratings = new HashMap<>();
     private HashMap<String, Book> books = new HashMap<>();
     private BinarySearchTree<Book> titleTree = new BinarySearchTree<>(new TitleComparator());
     private BinarySearchTree<Book> authorTree = new BinarySearchTree<>(new AuthorComparator());
@@ -23,7 +24,6 @@ public class Library {
     private HashMap<String, Book> loanBooks = new HashMap<>();
 
     private HashMap<String, Administrator> administrators = new HashMap<>();
-    private HashMap<String, Rating> ratings = new HashMap<>();
     private Graph<String> readerConnections = new Graph<>();
 
     // CONSTRUCTOR PRIVADO para Singleton
@@ -54,28 +54,6 @@ public class Library {
         }
     }
 
-    // CORREGIDO: Método unificado para cargar datos
-    private void loadDataFromPersistence() {
-        try {
-            readers = persistence.loadReaders();
-            books = persistence.loadBooks();
-            titleTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getTitle().toLowerCase()));
-            authorTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getAuthor().toLowerCase()));
-            categoryTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getCategory().toLowerCase()));
-
-            administrators = persistence.loadAdministrators();
-
-            // SOLUCIÓN: Establecer referencia DESPUÉS de que instance esté asignada
-            LinkedList<String> readerKeys = readers.keySet();
-            for (int i = 0; i < readerKeys.getSize(); i++) {
-                Reader reader = readers.get(readerKeys.getAmountNodo(i));
-                reader.setLibrary(this); // Ahora es seguro porque instance ya existe
-            }
-        } catch (Exception e) {
-            System.err.println("Error loading data from persistence: " + e.getMessage());
-            createDefaultData();
-        }
-    }
 
     // NUEVO: Crear datos mínimos si no se pueden cargar
     private void createDefaultData() {
@@ -338,6 +316,65 @@ public class Library {
         }
     }
 
+    private void loadDataFromPersistence() {
+        try {
+            readers = persistence.loadReaders();
+            books = persistence.loadBooks();
+            titleTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getTitle().toLowerCase()));
+            authorTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getAuthor().toLowerCase()));
+            categoryTree = persistence.loadBooksTree(Comparator.comparing(book -> book.getCategory().toLowerCase()));
+            administrators = persistence.loadAdministrators();
+
+            // NUEVO: Cargar valoraciones después de lectores y libros
+            ratings = persistence.loadRatings();
+
+            // Establecer referencias DESPUÉS de cargar todo
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.setLibrary(this);
+            }
+
+            System.out.println("✅ Biblioteca inicializada completamente:");
+            System.out.println("   - Lectores: " + readers.size());
+            System.out.println("   - Libros: " + books.size());
+            System.out.println("   - Administradores: " + administrators.size());
+            System.out.println("   - Valoraciones: " + ratings.size());
+
+        } catch (Exception e) {
+            System.err.println("Error loading data from persistence: " + e.getMessage());
+            createDefaultData();
+        }
+    }
+
+    // AGREGAR: Método específico para refrescar valoraciones
+    public void refreshRatingsFromFile() {
+        try {
+            System.out.println("🔄 Actualizando valoraciones desde archivo...");
+
+            // Limpiar valoraciones actuales de los lectores
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.getRatingsList().clear();
+            }
+
+            // Recargar valoraciones desde persistencia
+            ratings = persistence.loadRatings();
+
+            System.out.println("✅ Valoraciones actualizadas: " + ratings.size());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando valoraciones: " + e.getMessage());
+        }
+    }
+
+    // CORRECCIÓN: Actualizar el método de estadísticas
+    public String getLibraryStats() {
+        return String.format("Biblioteca - Lectores: %d, Libros: %d, Administradores: %d, Valoraciones: %d",
+                readers.size(), books.size(), administrators.size(), ratings.size());
+    }
+
     /**
      * CORRECCIÓN: Eliminar libro con persistencia
      */
@@ -462,6 +499,53 @@ public class Library {
         }
     }
 
+    public void forceRefreshAllData() {
+        try {
+            System.out.println("🔄 Forzando actualización completa de datos...");
+
+            // Recargar desde persistencia
+            Persistence persistence = new Persistence();
+            HashMap<String, Reader> newReaders = persistence.loadReaders();
+            HashMap<String, Book> newBooks = persistence.loadBooks();
+
+            // Limpiar estructuras actuales
+            readers.clear();
+            books.clear();
+
+            // Reestablecer datos
+            readers = newReaders;
+            books = newBooks;
+
+            // Establecer referencias de biblioteca en lectores
+            LinkedList<String> readerKeys = readers.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                Reader reader = readers.get(readerKeys.getAmountNodo(i));
+                reader.setLibrary(this);
+            }
+
+            // Reconstruir árboles
+            titleTree.clear();
+            authorTree.clear();
+            categoryTree.clear();
+
+            LinkedList<String> bookKeys = books.keySet();
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                Book book = books.get(bookKeys.getAmountNodo(i));
+                titleTree.insert(book);
+                authorTree.insert(book);
+                categoryTree.insert(book);
+            }
+
+            System.out.println("✅ Actualización completa terminada:");
+            System.out.println("   - Lectores: " + readers.size());
+            System.out.println("   - Libros: " + books.size());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en actualización forzada: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     // MÉTODOS GETTER CORREGIDOS
     public LinkedList<Reader> getReaders() {
         return getReadersList(); // Usar el método que convierte desde HashMap
@@ -496,11 +580,8 @@ public class Library {
     public HashMap<String, Reader> getReadersMap() {
         return readers;
     }
-
-    // NUEVO: Método para obtener estadísticas
-    public String getLibraryStats() {
-        return String.format("Biblioteca - Lectores: %d, Libros: %d, Administradores: %d, Valoraciones: %d",
-                readers.size(), books.size(), administrators.size(), ratings.size());
+    public HashMap<String, Rating> getRatings() {
+        return ratings;
     }
 
     // Devuelve el árbol binario de búsqueda que organiza los libros por autor.

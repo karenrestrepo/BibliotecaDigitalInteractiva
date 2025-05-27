@@ -1,6 +1,8 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -11,7 +13,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 
 public class LoadDataController {
     @FXML
@@ -48,41 +49,59 @@ public class LoadDataController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Seleccionar archivo de datos");
 
-        // Agregar filtros para diferentes tipos de archivos
+        // CORRECCIÓN: Agregar más filtros para diferentes tipos de archivos
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Archivos TXT", "*.txt"),
+                new FileChooser.ExtensionFilter("Archivos CSV", "*.csv"),
                 new FileChooser.ExtensionFilter("Todos los archivos", "*.*")
         );
 
         return fileChooser;
     }
 
-    private void processSelectedFile(File selectedFile) {
+
+    /**
+     * NUEVO: Método para notificar a todos los controladores relevantes
+     */
+    private void notifyAllControllers() {
+        ControllerRegistry registry = ControllerRegistry.getInstance();
+
+        // Notificar al controlador de gestión de usuarios
         try {
-            // Validaciones del archivo
-            if (!isValidFile(selectedFile)) {
-                return;
+            UserManagementController userController = registry.getController("UserManagementController", UserManagementController.class);
+            if (userController != null) {
+                userController.loadReadersTable();
+                System.out.println("✅ Tabla de usuarios actualizada");
             }
-
-            // Procesar el archivo
-            Library library = Library.getInstance();
-            String result = library.loadDataFromFile(selectedFile);
-
-            // Mostrar resultado
-            showAlert("Resultado de la carga", result);
-
-            // Notificar a los listeners que se han cargado datos
-            if (dataLoadListener != null) {
-                dataLoadListener.onDataLoaded();
-            }
-
-            // Log para debugging
-            System.out.println("Archivo procesado exitosamente: " + selectedFile.getName());
-            System.out.println("Resultado: " + result);
-
         } catch (Exception e) {
-            showAlert("Error", "Ocurrió un error al procesar el archivo: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("⚠️ No se pudo actualizar tabla de usuarios: " + e.getMessage());
+        }
+
+        // Notificar al controlador de gestión de libros
+        try {
+            ManageBooksController bookController = registry.getController("ManageBooksController", ManageBooksController.class);
+            if (bookController != null) {
+                bookController.updateTableView();
+                System.out.println("✅ Tabla de libros actualizada");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ No se pudo actualizar tabla de libros: " + e.getMessage());
+        }
+
+        // Notificar al controlador de estadísticas
+        try {
+            LibraryStatsController statsController = registry.getController("LibraryStatsController", LibraryStatsController.class);
+            if (statsController != null) {
+                statsController.loadAllStatistics();
+                System.out.println("✅ Estadísticas actualizadas");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ No se pudo actualizar estadísticas: " + e.getMessage());
+        }
+
+        // Notificar usando el listener tradicional si existe
+        if (dataLoadListener != null) {
+            dataLoadListener.onDataLoaded();
         }
     }
 
@@ -102,11 +121,11 @@ public class LoadDataController {
             return false;
         }
 
-        // Verificar que sea un archivo de texto
+        // CORRECCIÓN: Aceptar más tipos de archivos
         String fileName = file.getName().toLowerCase();
-        if (!fileName.endsWith(".txt")) {
+        if (!fileName.endsWith(".txt") && !fileName.endsWith(".csv")) {
             boolean proceed = showConfirmation("Archivo no reconocido",
-                    "El archivo no tiene extensión .txt. ¿Desea continuar?");
+                    "El archivo no tiene extensión .txt o .csv. ¿Desea continuar?");
             return proceed;
         }
 
@@ -132,12 +151,231 @@ public class LoadDataController {
                 .isPresent();
     }
 
+    private void debugFileContent(File file) {
+        System.out.println("🔍 DEBUGGING - Contenido del archivo: " + file.getName());
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null && lineNumber <= 10) {
+                System.out.println("Línea " + lineNumber + ": " + line);
+                lineNumber++;
+            }
+        } catch (IOException e) {
+            System.err.println("Error leyendo archivo para debug: " + e.getMessage());
+        }
+    }
+
+    private void processSelectedFile(File selectedFile) {
+        try {
+            // Validaciones del archivo
+            if (!isValidFile(selectedFile)) {
+                return;
+            }
+
+            // Determinar tipo de archivo ANTES de procesarlo
+            String fileName = selectedFile.getName().toLowerCase();
+            String dataType = determineFileType(fileName);
+
+            debugFileContent(selectedFile, dataType);
+
+            System.out.println("🔍 Procesando archivo: " + fileName + " (Tipo: " + dataType + ")");
+
+            // Procesar el archivo
+            Library library = Library.getInstance();
+            String result = library.loadDataFromFile(selectedFile);
+
+            // CORRECCIÓN: Actualización específica según el tipo
+            refreshSpecificDataType(dataType, library);
+
+            // CORRECCIÓN: Notificación específica de controladores
+            notifySpecificControllers(dataType);
+
+            // Mostrar resultado
+            showAlert("Resultado de la carga", result);
+
+            // Log para debugging
+            System.out.println("✅ Archivo procesado exitosamente: " + selectedFile.getName());
+            System.out.println("Resultado: " + result);
+
+        } catch (Exception e) {
+            showAlert("Error", "Ocurrió un error al procesar el archivo: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * NUEVO: Determina el tipo de archivo basándose en el nombre
+     */
+    private String determineFileType(String fileName) {
+        if (fileName.contains("lector") || fileName.contains("reader")) {
+            return "readers";
+        } else if (fileName.contains("libro") || fileName.contains("book")) {
+            return "books";
+        } else if (fileName.contains("valoracion") || fileName.contains("rating") || fileName.contains("calificacion")) {
+            return "ratings";
+        } else if (fileName.contains("conexion") || fileName.contains("connection")) {
+            return "connections";
+        } else if (fileName.contains("admin")) {
+            return "admins";
+        } else {
+            return "auto";
+        }
+    }
+
+    /**
+     * NUEVO: Actualización específica según tipo de datos
+     */
+    private void refreshSpecificDataType(String dataType, Library library) {
+        System.out.println("🔄 Actualizando estructuras para tipo: " + dataType);
+
+        switch (dataType) {
+            case "readers":
+                // Solo actualizar lectores - NO limpiar todo
+                System.out.println("Actualizando solo datos de lectores...");
+                break;
+
+            case "books":
+                // Solo actualizar libros
+                System.out.println("Actualizando solo datos de libros...");
+                break;
+
+            case "ratings":
+                // CRÍTICO: Actualizar valoraciones sin tocar lectores
+                library.refreshRatingsFromFile();
+                System.out.println("Actualizando solo valoraciones...");
+                break;
+
+            case "connections":
+                System.out.println("Conexiones cargadas, no requiere actualización adicional");
+                break;
+
+            case "auto":
+                // Solo para detección automática hacer refresh completo
+                System.out.println("Detección automática - actualizando todo...");
+                break;
+
+            default:
+                System.out.println("Tipo no reconocido, sin actualización específica");
+                break;
+        }
+    }
+
+    /**
+     * CORRECCIÓN: Notificar solo controladores relevantes
+     */
+    private void notifySpecificControllers(String dataType) {
+        ControllerRegistry registry = ControllerRegistry.getInstance();
+
+        switch (dataType) {
+            case "readers":
+                updateUserManagementController(registry);
+                break;
+
+            case "books":
+                updateBooksManagementController(registry);
+                break;
+
+            case "ratings":
+            case "connections":
+                updateStatisticsController(registry);
+                break;
+
+            case "auto":
+                // Solo para auto-detección actualizar todo
+                updateAllControllers(registry);
+                break;
+        }
+    }
+
+    /**
+     * MÉTODO AUXILIAR: Actualizar solo controlador de usuarios
+     */
+    private void updateUserManagementController(ControllerRegistry registry) {
+        try {
+            UserManagementController userController = registry.getController("UserManagementController", UserManagementController.class);
+            if (userController != null) {
+                userController.loadReadersTable();
+                System.out.println("✅ Tabla de usuarios actualizada");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error actualizando tabla de usuarios: " + e.getMessage());
+        }
+    }
+
+    /**
+     * MÉTODO AUXILIAR: Actualizar solo controlador de libros
+     */
+    private void updateBooksManagementController(ControllerRegistry registry) {
+        try {
+            ManageBooksController bookController = registry.getController("ManageBooksController", ManageBooksController.class);
+            if (bookController != null) {
+                bookController.updateTableView();
+                System.out.println("✅ Tabla de libros actualizada");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error actualizando tabla de libros: " + e.getMessage());
+        }
+    }
+
+    /**
+     * MÉTODO AUXILIAR: Actualizar solo controlador de estadísticas
+     */
+    private void updateStatisticsController(ControllerRegistry registry) {
+        try {
+            LibraryStatsController statsController = registry.getController("LibraryStatsController", LibraryStatsController.class);
+            if (statsController != null) {
+                statsController.loadAllStatistics();
+                System.out.println("✅ Estadísticas actualizadas (incluye valoraciones)");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error actualizando estadísticas: " + e.getMessage());
+        }
+    }
+
+    /**
+     * MÉTODO AUXILIAR: Actualizar todos los controladores (solo para auto-detección)
+     */
+    private void updateAllControllers(ControllerRegistry registry) {
+        updateUserManagementController(registry);
+        updateBooksManagementController(registry);
+        updateStatisticsController(registry);
+
+        // Notificar usando el listener tradicional si existe
+        if (dataLoadListener != null) {
+            dataLoadListener.onDataLoaded();
+        }
+    }
+
+    private void debugFileContent(File file, String expectedType) {
+        System.out.println("🔍 DEBUGGING - Analizando archivo: " + file.getName());
+        System.out.println("🔍 Tipo esperado: " + expectedType);
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null && lineNumber <= 5) {
+                System.out.println("   Línea " + lineNumber + ": " + line);
+
+                // Analizar formato de la primera línea de datos
+                if (lineNumber == 1 && !line.startsWith("#")) {
+                    String[] parts = line.split(",");
+                    System.out.println("   Campos detectados: " + parts.length);
+                    for (int i = 0; i < parts.length; i++) {
+                        System.out.println("     Campo " + (i+1) + ": '" + parts[i].trim() + "'");
+                    }
+                }
+                lineNumber++;
+            }
+        } catch (IOException e) {
+            System.err.println("Error en debugging: " + e.getMessage());
+        }
+    }
+
+
     @FXML
     void initialize() {
         System.out.println("LoadDataController inicializado correctamente");
         // Registrar este controlador para comunicación con otros controladores
         ControllerRegistry.getInstance().registerController("LoadDataController", this);
     }
-
 }
-

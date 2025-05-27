@@ -9,3 +9,7 @@
 008,La Odisea,Homero,-800,Épica
 009,Don Juan Tenorio,José Zorrilla,1844,Teatro
 010,Rayuela,Julio Cortázar,1963,Surrealismo
+012,El Principito,Antoine de Saint-Exupéry,1943,Infantil
+013,Madame Bovary,Gustave Flaubert,1857,Realismo
+011,La Metamorfosis,Franz Kafka,1915,Ficción
+014,El Gran Gatsby,F. Scott Fitzgerald,1925,Ficción Americana

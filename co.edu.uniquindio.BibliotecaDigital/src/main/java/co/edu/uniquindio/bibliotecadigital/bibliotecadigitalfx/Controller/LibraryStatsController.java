@@ -111,6 +111,9 @@ public class LibraryStatsController {
         loadAllStatistics();
         setupComboBoxes();
         setupFilterListener();
+
+        // CORRECCIÓN: Registrar este controlador
+        ControllerRegistry.getInstance().registerController("LibraryStatsController", this);
     }
 
     /**
@@ -143,11 +146,17 @@ public class LibraryStatsController {
      * Carga todas las estadísticas principales
      * Este método demuestra cómo procesar grandes volúmenes de datos de manera eficiente
      */
-    private void loadAllStatistics() {
-        loadLoanStatistics();
-        loadRatingStatistics();
-        loadConnectionStatistics();
-        loadClusterStatistics();
+    public void loadAllStatistics() {
+        try {
+            loadLoanStatistics();
+            loadRatingStatistics();
+            loadConnectionStatistics();
+            loadClusterStatistics();
+            setupComboBoxes(); // Actualizar también los ComboBox
+            System.out.println("📊 Estadísticas actualizadas correctamente");
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando estadísticas: " + e.getMessage());
+        }
     }
 
     /**

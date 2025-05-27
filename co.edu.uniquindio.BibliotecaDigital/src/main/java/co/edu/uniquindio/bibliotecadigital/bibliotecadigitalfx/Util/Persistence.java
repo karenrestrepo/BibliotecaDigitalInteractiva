@@ -1,5 +1,7 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Util;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.LibraryStatsController;
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.*;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Reader;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.BinarySearchTree;
@@ -468,79 +470,7 @@ public class Persistence {
         }
     }
 
-    // ==================== CARGA DESDE ARCHIVOS EXTERNOS ====================
 
-    /**
-     * SOLUCIÓN 9: Método mejorado para cargar datos externos
-     */
-    public String loadDataFromFile(File file) {
-        if (file == null || !file.exists() || !file.canRead()) {
-            return "❌ Archivo inválido o no se puede leer";
-        }
-
-        try {
-            String fileName = file.getName().toLowerCase();
-            int recordsLoaded = 0;
-
-            if (fileName.contains("lector") || fileName.contains("reader")) {
-                recordsLoaded = loadReadersFromExternalFile(file);
-                return "✅ Se cargaron " + recordsLoaded + " lectores desde " + file.getName();
-            }
-            else if (fileName.contains("libro") || fileName.contains("book")) {
-                recordsLoaded = loadBooksFromExternalFile(file);
-                return "✅ Se cargaron " + recordsLoaded + " libros desde " + file.getName();
-            }
-            else if (fileName.contains("admin")) {
-                recordsLoaded = loadAdminsFromExternalFile(file);
-                return "✅ Se cargaron " + recordsLoaded + " administradores desde " + file.getName();
-            }
-            else {
-                recordsLoaded = detectAndLoadFromContent(file);
-                return "✅ Se detectó y cargó " + recordsLoaded + " registros desde " + file.getName();
-            }
-
-        } catch (Exception e) {
-            return "❌ Error al cargar archivo: " + e.getMessage();
-        }
-    }
-
-    private int loadReadersFromExternalFile(File file) throws IOException {
-        int count = 0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(file));
-             BufferedWriter writer = getFileWriter(READERS_FILE, true)) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty() && !line.startsWith("#")) {
-                    writer.write(line);
-                    writer.newLine();
-                    count++;
-                }
-            }
-            writer.flush();
-        }
-        return count;
-    }
-
-    private int loadBooksFromExternalFile(File file) throws IOException {
-        int count = 0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(file));
-             BufferedWriter writer = getFileWriter(BOOKS_FILE, true)) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty() && !line.startsWith("#")) {
-                    writer.write(line);
-                    writer.newLine();
-                    count++;
-                }
-            }
-            writer.flush();
-        }
-        return count;
-    }
 
     private int loadAdminsFromExternalFile(File file) throws IOException {
         int count = 0;
@@ -561,20 +491,6 @@ public class Persistence {
         return count;
     }
 
-    private int detectAndLoadFromContent(File file) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String firstLine = reader.readLine();
-            if (firstLine != null && !firstLine.startsWith("#")) {
-                String[] parts = firstLine.split(",");
-                if (parts.length == 3) {
-                    return loadReadersFromExternalFile(file);
-                } else if (parts.length >= 5) {
-                    return loadBooksFromExternalFile(file);
-                }
-            }
-        }
-        return 0;
-    }
 
     // ==================== SISTEMA DE AUTENTICACIÓN ====================
 
@@ -616,6 +532,477 @@ public class Persistence {
         System.out.println("❌ Usuario no encontrado o contraseña incorrecta: " + cleanUsername);
         return null;
     }
+
+    // ==================== MÉTODO PRINCIPAL CORREGIDO ====================
+
+    public String loadDataFromFile(File file) {
+        if (file == null || !file.exists() || !file.canRead()) {
+            return "❌ Archivo inválido o no se puede leer";
+        }
+
+        try {
+            String fileName = file.getName().toLowerCase();
+            int recordsLoaded = 0;
+            String resultMessage = "";
+            String dataType = "";
+
+            if (fileName.contains("lector") || fileName.contains("reader")) {
+                recordsLoaded = loadReadersFromExternalFile(file);
+                resultMessage = "✅ Se cargaron " + recordsLoaded + " lectores desde " + file.getName();
+                dataType = "readers";
+            }
+            else if (fileName.contains("libro") || fileName.contains("book")) {
+                recordsLoaded = loadBooksFromExternalFile(file);
+                resultMessage = "✅ Se cargaron " + recordsLoaded + " libros desde " + file.getName();
+                dataType = "books";
+            }
+            else if (fileName.contains("valoracion") || fileName.contains("rating") || fileName.contains("calificacion")) {
+                recordsLoaded = loadRatingsFromExternalFile(file);
+                resultMessage = "✅ Se cargaron " + recordsLoaded + " valoraciones desde " + file.getName();
+                dataType = "ratings";
+            }
+            else if (fileName.contains("conexion") || fileName.contains("connection")) {
+                recordsLoaded = loadConnectionsFromExternalFile(file);
+                resultMessage = "✅ Se cargaron " + recordsLoaded + " conexiones desde " + file.getName();
+                dataType = "connections";
+            }
+            else {
+                recordsLoaded = detectAndLoadFromContent(file);
+                resultMessage = "✅ Se detectó y cargó " + recordsLoaded + " registros desde " + file.getName();
+                dataType = "auto";
+            }
+
+            // CORRECCIÓN: Actualización selectiva según el tipo de datos
+            if (recordsLoaded > 0) {
+                refreshSpecificData(dataType);
+                resultMessage += "\n🔄 Datos específicos actualizados.";
+            }
+
+            return resultMessage;
+
+        } catch (Exception e) {
+            return "❌ Error al cargar archivo: " + e.getMessage();
+        }
+    }
+
+    private void refreshSpecificData(String dataType) {
+        try {
+            switch (dataType) {
+                case "readers":
+                    refreshReadersData();
+                    break;
+                case "books":
+                    refreshBooksData();
+                    break;
+                case "ratings":
+                    refreshRatingsData();
+                    break;
+                case "connections":
+                    // Las conexiones no requieren actualización especial
+                    System.out.println("✅ Conexiones cargadas");
+                    break;
+                case "auto":
+                    // Actualización completa solo si es detección automática
+                    refreshDataFromPersistence();
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error en actualización específica: " + e.getMessage());
+        }
+    }
+
+// ==================== NUEVOS MÉTODOS DE CARGA ====================
+
+    /**
+     * NUEVO: Carga valoraciones desde archivo externo
+     */
+    private int loadRatingsFromExternalFile(File file) throws IOException {
+        int count = 0;
+        HashMap<String, Reader> readers = loadReaders();
+        HashMap<String, Book> books = loadBooks();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file));
+             BufferedWriter writer = getFileWriter(RATINGS_FILE, true)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) {
+                    String[] parts = line.split(",");
+                    if (parts.length >= 3) {
+                        String username = parts[0].trim();
+                        String bookTitle = parts[1].trim();
+                        String starsStr = parts[2].trim();
+                        String comment = parts.length > 3 ? parts[3].trim() : "";
+
+                        try {
+                            int stars = Integer.parseInt(starsStr);
+
+                            // Verificar que el lector existe
+                            Reader readerObj = readers.get(username);
+                            if (readerObj != null) {
+                                // Buscar el libro por título
+                                Book bookObj = findBookByTitle(bookTitle, books);
+                                if (bookObj != null) {
+                                    // CORRECCIÓN: Guardar en archivo
+                                    writer.write(username + "," + bookObj.getIdBook() + "," + stars + "," + comment);
+                                    writer.newLine();
+
+                                    // CORRECCIÓN: También agregar a la lista del reader en memoria
+                                    Rating rating = new Rating(readerObj, bookObj, stars, comment);
+                                    readerObj.getRatingsList().add(rating);
+
+                                    // CORRECCIÓN: Actualizar valoración promedio del libro
+                                    bookObj.addRating(stars);
+
+                                    count++;
+                                    System.out.println("⭐ Valoración cargada: " + username + " -> " + bookTitle + " (" + stars + "★)");
+                                } else {
+                                    System.err.println("⚠️ Libro no encontrado: " + bookTitle);
+                                }
+                            } else {
+                                System.err.println("⚠️ Lector no encontrado: " + username);
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("⚠️ Puntuación inválida: " + line);
+                        }
+                    }
+                }
+            }
+            writer.flush();
+        }
+        return count;
+    }
+
+    public HashMap<String, Rating> loadRatings() {
+        HashMap<String, Rating> ratings = new HashMap<>();
+        HashMap<String, Reader> readers = loadReaders();
+        HashMap<String, Book> books = loadBooks();
+
+        try (BufferedReader reader = getFileReader(RATINGS_FILE)) {
+            String line;
+            int validCount = 0;
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split(",");
+                if (parts.length >= 3) {
+                    String username = parts[0].trim();
+                    String bookId = parts[1].trim();
+                    String starsStr = parts[2].trim();
+                    String comment = parts.length > 3 ? parts[3].trim() : "";
+
+                    try {
+                        int stars = Integer.parseInt(starsStr);
+
+                        Reader readerObj = readers.get(username);
+                        Book bookObj = books.get(bookId);
+
+                        if (readerObj != null && bookObj != null) {
+                            Rating rating = new Rating(readerObj, bookObj, stars, comment);
+                            String key = username + "|" + bookId;
+                            ratings.put(key, rating);
+
+                            // IMPORTANTE: Agregar a la lista del reader
+                            readerObj.getRatingsList().add(rating);
+
+                            validCount++;
+                            System.out.println("⭐ Rating cargado en memoria: " + username + " -> " + bookObj.getTitle());
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("⚠️ Puntuación inválida: " + line);
+                    }
+                }
+            }
+
+            System.out.println("✅ Valoraciones cargadas en memoria: " + validCount);
+
+        } catch (IOException e) {
+            System.err.println("⚠️ Error leyendo valoraciones: " + e.getMessage());
+        }
+
+        return ratings;
+    }
+
+    /**
+     * NUEVO: Carga conexiones desde archivo externo
+     */
+    private int loadConnectionsFromExternalFile(File file) throws IOException {
+        int count = 0;
+        HashMap<String, Reader> readers = loadReaders();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) {
+                    String[] parts = line.split(",");
+                    if (parts.length >= 2) {
+                        String user1 = parts[0].trim();
+                        String user2 = parts[1].trim();
+
+                        // Verificar que ambos lectores existen
+                        if (readers.containsKey(user1) && readers.containsKey(user2)) {
+                            if (saveConnection(user1, user2)) {
+                                count++;
+                                System.out.println("🤝 Conexión cargada: " + user1 + " <-> " + user2);
+                            }
+                        } else {
+                            System.err.println("⚠️ Uno o ambos lectores no encontrados: " + user1 + ", " + user2);
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * CORRECCIÓN 3: Método auxiliar para buscar libro por título
+     */
+    private Book findBookByTitle(String title, HashMap<String, Book> books) {
+        LinkedList<String> keys = books.keySet();
+        for (int i = 0; i < keys.getSize(); i++) {
+            Book book = books.get(keys.getAmountNodo(i));
+            if (book.getTitle().equalsIgnoreCase(title.trim())) {
+                return book;
+            }
+        }
+        return null;
+    }
+
+// ==================== MÉTODOS DE CARGA CORREGIDOS ====================
+
+    /**
+     * CORRECCIÓN 4: Método de carga de lectores mejorado (sin duplicados)
+     */
+    private int loadReadersFromExternalFile(File file) throws IOException {
+        int count = 0;
+        HashMap<String, Reader> existingReaders = loadReaders();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) {
+                    String[] parts = line.split(",");
+                    if (parts.length >= 3) {
+                        String name = parts[0].trim();
+                        String username = parts[1].trim();
+                        String password = parts[2].trim();
+
+                        // VERIFICAR DUPLICADOS
+                        if (!existingReaders.containsKey(username)) {
+                            if (saveReader(new Reader(name, username, password))) {
+                                count++;
+                                System.out.println("👤 Lector cargado: " + name + " (" + username + ")");
+                            }
+                        } else {
+                            System.out.println("⚠️ Lector ya existe, omitido: " + username);
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * CORRECCIÓN 5: Método de carga de libros mejorado (sin duplicados)
+     */
+    private int loadBooksFromExternalFile(File file) throws IOException {
+        int count = 0;
+        HashMap<String, Book> existingBooks = loadBooks();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty() && !line.startsWith("#")) {
+                    String[] parts = line.split(",");
+                    if (parts.length >= 5) {
+                        String id = parts[0].trim();
+                        String title = parts[1].trim();
+                        String author = parts[2].trim();
+                        String yearStr = parts[3].trim();
+                        String category = parts[4].trim();
+
+                        try {
+                            int year = Integer.parseInt(yearStr);
+
+                            // VERIFICAR DUPLICADOS POR ID Y POR TÍTULO
+                            if (!existingBooks.containsKey(id) && !bookExistsByTitle(title, existingBooks)) {
+                                Book newBook = new Book(id, title, author, year, category);
+                                if (saveBook(newBook)) {
+                                    count++;
+                                    System.out.println("📖 Libro cargado: " + title + " (" + id + ")");
+                                }
+                            } else {
+                                System.out.println("⚠️ Libro ya existe, omitido: " + title + " (ID: " + id + ")");
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("⚠️ Año inválido para libro: " + line);
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * CORRECCIÓN 6: Método auxiliar para verificar si un libro existe por título
+     */
+    private boolean bookExistsByTitle(String title, HashMap<String, Book> books) {
+        LinkedList<String> keys = books.keySet();
+        for (int i = 0; i < keys.getSize(); i++) {
+            Book book = books.get(keys.getAmountNodo(i));
+            if (book.getTitle().equalsIgnoreCase(title.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * CORRECCIÓN 7: Método de detección inteligente mejorado
+     */
+    private int detectAndLoadFromContent(File file) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String firstLine = reader.readLine();
+            if (firstLine != null && !firstLine.startsWith("#")) {
+                String[] parts = firstLine.split(",");
+
+                // Detectar por número de campos y contenido
+                if (parts.length == 3) {
+                    // Podría ser lector o valoración
+                    // Verificar si el tercer campo es numérico (valoración) o texto (contraseña)
+                    try {
+                        Integer.parseInt(parts[2].trim());
+                        // Es numérico, probablemente una valoración
+                        System.out.println("🔍 Detectado como archivo de valoraciones (3 campos, tercer campo numérico)");
+                        return loadRatingsFromExternalFile(file);
+                    } catch (NumberFormatException e) {
+                        // No es numérico, probablemente un lector
+                        System.out.println("🔍 Detectado como archivo de lectores (3 campos, tercer campo texto)");
+                        return loadReadersFromExternalFile(file);
+                    }
+                }
+                else if (parts.length == 4) {
+                    // Probablemente valoración con comentario
+                    System.out.println("🔍 Detectado como archivo de valoraciones (4 campos)");
+                    return loadRatingsFromExternalFile(file);
+                }
+                else if (parts.length >= 5) {
+                    // Probablemente libros
+                    System.out.println("🔍 Detectado como archivo de libros (5+ campos)");
+                    return loadBooksFromExternalFile(file);
+                }
+                else if (parts.length == 2) {
+                    // Probablemente conexiones
+                    System.out.println("🔍 Detectado como archivo de conexiones (2 campos)");
+                    return loadConnectionsFromExternalFile(file);
+                }
+            }
+        }
+        System.out.println("⚠️ No se pudo detectar el tipo de archivo automáticamente");
+        return 0;
+    }
+
+    /**
+     * CORRECCIÓN: Método de actualización selectiva según el tipo de datos cargados
+     */
+    private void refreshDataFromPersistence() {
+        // NO limpiar todo automáticamente
+        System.out.println("🔄 Actualizando estructuras de datos específicas...");
+    }
+
+    /**
+     * NUEVO: Método específico para actualizar solo lectores
+     */
+    public void refreshReadersData() {
+        try {
+            HashMap<String, Reader> newReaders = loadReaders();
+            Library library = Library.getInstance();
+
+            // Actualizar solo lectores
+            library.getReadersMap().clear();
+            LinkedList<String> readerKeys = newReaders.keySet();
+            for (int i = 0; i < readerKeys.getSize(); i++) {
+                String key = readerKeys.getAmountNodo(i);
+                Reader reader = newReaders.get(key);
+                reader.setLibrary(library);
+                library.getReadersMap().put(key, reader);
+            }
+
+            System.out.println("✅ Lectores actualizados: " + newReaders.size());
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando lectores: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Método específico para actualizar solo libros
+     */
+    public void refreshBooksData() {
+        try {
+            HashMap<String, Book> newBooks = loadBooks();
+            Library library = Library.getInstance();
+
+            // Actualizar solo libros
+            library.getBooks().clear();
+            LinkedList<String> bookKeys = newBooks.keySet();
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                String key = bookKeys.getAmountNodo(i);
+                Book book = newBooks.get(key);
+                library.getBooks().put(key, book);
+            }
+
+            // Reconstruir árboles de búsqueda solo para libros
+            library.getTitleTree().clear();
+            library.getAuthorTree().clear();
+            library.getCategoryTree().clear();
+
+            for (int i = 0; i < bookKeys.getSize(); i++) {
+                Book book = newBooks.get(bookKeys.getAmountNodo(i));
+                library.getTitleTree().insert(book);
+                library.getAuthorTree().insert(book);
+                library.getCategoryTree().insert(book);
+            }
+
+            System.out.println("✅ Libros actualizados: " + newBooks.size());
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando libros: " + e.getMessage());
+        }
+    }
+
+    /**
+     * NUEVO: Método específico para actualizar solo valoraciones
+     */
+    public void refreshRatingsData() {
+        try {
+            HashMap<String, Rating> newRatings = loadRatings();
+            Library library = Library.getInstance();
+
+            // Actualizar valoraciones
+            library.getRatings().clear();
+            LinkedList<String> ratingKeys = newRatings.keySet();
+            for (int i = 0; i < ratingKeys.getSize(); i++) {
+                String key = ratingKeys.getAmountNodo(i);
+                library.getRatings().put(key, newRatings.get(key));
+            }
+
+            System.out.println("✅ Valoraciones actualizadas: " + newRatings.size());
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando valoraciones: " + e.getMessage());
+        }
+    }
+
+
 
     // ==================== DATOS POR DEFECTO ====================
 

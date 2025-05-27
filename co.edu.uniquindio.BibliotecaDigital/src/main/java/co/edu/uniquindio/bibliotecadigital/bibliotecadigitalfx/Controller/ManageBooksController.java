@@ -89,28 +89,6 @@ public class ManageBooksController {
 
     }
 
-    // Reemplazar el método initialize en ManageBooksController.java
-
-    @FXML
-    void initialize() {
-        try {
-            library = Library.getInstance();
-
-            initView();
-            setupLiveSearch();
-
-            System.out.println("ManageBooksController inicializado correctamente");
-
-            // Mostrar estadísticas de la biblioteca para verificar la conexión
-            System.out.println("Libros cargados en la biblioteca: " + library.getBookssList().getSize());
-
-        } catch (Exception e) {
-            showMessage("Error de inicialización", "No se pudo inicializar el controlador",
-                    "Error: " + e.getMessage(), Alert.AlertType.ERROR);
-            e.printStackTrace();
-        }
-    }
-
     // También corregir el método buildBook para validar mejor los datos
     private Book buildBook() {
         try {
@@ -224,12 +202,41 @@ public class ManageBooksController {
 
     }
 
-
-    private void updateTableView() {
-        tableBook.getItems().clear();
-        List<Book> books = library.getTitleTree().obtenerListainOrder(); // o getAuthorTree() o getCategoryTree()
-        tableBook.getItems().addAll(books);
+    public void updateTableView() {
+        try {
+            tableBook.getItems().clear();
+            List<Book> books = library.getTitleTree().obtenerListainOrder();
+            tableBook.getItems().addAll(books);
+            System.out.println("📚 Tabla de libros actualizada: " + books.size() + " libros");
+        } catch (Exception e) {
+            System.err.println("❌ Error actualizando tabla de libros: " + e.getMessage());
+            showMessage("Error", "Error actualizando tabla", e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
+
+    // También agregar este método al ManageBooksController initialize()
+    @FXML
+    void initialize() {
+        try {
+            library = Library.getInstance();
+            initView();
+            setupLiveSearch();
+
+            System.out.println("ManageBooksController inicializado correctamente");
+
+            // CORRECCIÓN: Registrar este controlador
+            ControllerRegistry.getInstance().registerController("ManageBooksController", this);
+
+            // Mostrar estadísticas de la biblioteca para verificar la conexión
+            System.out.println("Libros cargados en la biblioteca: " + library.getBookssList().getSize());
+
+        } catch (Exception e) {
+            showMessage("Error de inicialización", "No se pudo inicializar el controlador",
+                    "Error: " + e.getMessage(), Alert.AlertType.ERROR);
+            e.printStackTrace();
+        }
+    }
+
 
     private void setupLiveSearch() {
         txtFiltrarLibro.textProperty().addListener((obs, oldText, newText) -> {
