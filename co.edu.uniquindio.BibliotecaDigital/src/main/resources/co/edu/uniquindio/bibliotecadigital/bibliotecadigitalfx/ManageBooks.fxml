@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.text.*?>
-<?import java.lang.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="632.0" prefWidth="602.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController">
+<AnchorPane prefHeight="632.0" prefWidth="602.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller.ManageBooksController">
    <children>
       <SplitPane dividerPositions="0.432258064516129" layoutX="4.0" layoutY="7.0" orientation="VERTICAL" prefHeight="622.0" prefWidth="594.0">
          <items>
@@ -39,7 +37,6 @@
                      <font>
                         <Font name="Cambria" size="14.0" />
                      </font></Label>
-                  <TextField fx:id="txtStatus" layoutX="384.0" layoutY="99.0" prefHeight="25.0" prefWidth="180.0" />
                   <TextField fx:id="txtCategory" layoutX="384.0" layoutY="31.0" prefHeight="25.0" prefWidth="180.0" />
                   <TextField fx:id="txtAuthor" layoutX="79.0" layoutY="99.0" prefHeight="25.0" prefWidth="180.0" />
                   <TextField fx:id="txtYear" layoutX="79.0" layoutY="167.0" prefHeight="25.0" prefWidth="180.0" />
@@ -57,6 +54,7 @@
                         <Font name="Cambria" size="14.0" />
                      </font></Label>
                   <TextField fx:id="txtId" layoutX="79.0" layoutY="219.0" prefHeight="25.0" prefWidth="180.0" />
+                  <ComboBox fx:id="Combostatus" layoutX="384.0" layoutY="100.0" onAction="#Combo" prefHeight="25.0" prefWidth="180.0" />
                </children>
             </AnchorPane>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="337.0" prefWidth="592.0">

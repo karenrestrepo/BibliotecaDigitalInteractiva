@@ -4,3 +4,4 @@ Ana,ana@gmail.com,Ana123
 Juliana,july@.com,2020
 Antonio,antonio@gmail.com,8989
 Vanessa,vane@gmail.com,123
+Usuario Test,test@email.com,password

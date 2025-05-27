@@ -394,7 +394,8 @@ public class LibrarySystemTests {
             Library library = Library.getInstance();
 
             // Prueba 6.1: Creación de libro
-            Book nuevoLibro = library.createBook("TEST001", "Libro de Prueba", "Autor Test", 2023, "Pruebas");
+            Book nuevoLibro = library.createBook("TEST001", "Libro de Prueba", "Autor Test", 2023, "Pruebas", BookStatus.AVAILABLE);
+
             if (nuevoLibro == null) {
                 System.out.println("❌ Error: No se pudo crear el libro");
                 return false;
@@ -409,7 +410,7 @@ public class LibrarySystemTests {
 
             // Prueba 6.3: No se puede crear libro con ID duplicado
             try {
-                library.createBook("TEST001", "Otro Libro", "Otro Autor", 2023, "Otra Categoría");
+                library.createBook("TEST001", "Otro Libro", "Otro Autor", 2023, "Otra Categoría", BookStatus.AVAILABLE);
                 System.out.println("❌ Error: No debería permitir IDs duplicados");
                 return false;
             } catch (IllegalArgumentException e) {

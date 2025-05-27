@@ -1,5 +1,6 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.AuthorComparator;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.CategoryComparator;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.SearchTypes.TitleComparator;
@@ -216,7 +217,7 @@ public class Library {
     /**
      * CORRECCIÓN: Crear libro con persistencia inmediata
      */
-    public Book createBook(String id, String title, String author, int year, String category)
+    public Book createBook(String id, String title, String author, int year, String category, BookStatus status)
             throws IllegalArgumentException {
 
         // Validaciones (mantén las que ya tienes)
@@ -235,6 +236,10 @@ public class Library {
 
         String cleanId = id.trim();
 
+        if (books.containsKey(cleanId)) {
+            throw new IllegalArgumentException("Book with ID '" + cleanId + "' already exists");
+        }
+
         // Verificar que no existe
         if (books.containsKey(cleanId)) {
             throw new IllegalArgumentException("Book with ID '" + cleanId + "' already exists");
@@ -242,7 +247,7 @@ public class Library {
 
         // Crear libro
         Book newBook = new Book(cleanId, title.trim(), author.trim(), year,
-                category != null ? category.trim() : "");
+                category != null ? category.trim() : "",status);
 
         // Guardar en memoria
         books.put(cleanId, newBook);

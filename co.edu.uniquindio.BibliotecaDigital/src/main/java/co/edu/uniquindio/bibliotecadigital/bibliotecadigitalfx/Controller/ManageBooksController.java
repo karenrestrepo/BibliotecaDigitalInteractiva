@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Enum.BookStatus;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Book;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Model.Library;
 import co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Structures.LinkedList;
@@ -78,6 +79,15 @@ public class ManageBooksController {
     private TextField txtId;
 
     @FXML
+    private ComboBox<BookStatus> Combostatus;
+
+    @FXML
+    void Combo(ActionEvent event) {
+
+    }
+
+
+    @FXML
     void onAdd(ActionEvent event) {
         addBook();
 
@@ -113,18 +123,25 @@ public class ManageBooksController {
                 throw new IllegalArgumentException("El año debe ser un número válido");
             }
 
+            BookStatus status = Combostatus.getValue();
+            if (status == null) {
+                throw new IllegalArgumentException("Debe seleccionar un estado para el libro.");
+            }
+
             return new Book(
                     id.trim(),
                     txtTitle.getText() != null ? txtTitle.getText().trim() : "",
                     txtAuthor.getText() != null ? txtAuthor.getText().trim() : "",
                     year,
-                    txtCategory.getText() != null ? txtCategory.getText().trim() : ""
+                    txtCategory.getText() != null ? txtCategory.getText().trim() : "",
+                    status
             );
 
         } catch (Exception e) {
             throw new RuntimeException("Error construyendo el libro: " + e.getMessage(), e);
         }
     }
+
 
     private void addBook() {
         Book book = buildBook();
@@ -141,7 +158,10 @@ public class ManageBooksController {
                         book.getTitle(),
                         book.getAuthor(),
                         book.getYear(),
-                        book.getCategory()
+                        book.getCategory(),
+                        book.getStatus()
+
+
                 );
                 updateTableView();
                 showMessage("Success", "Book added", "The book was added successfully", Alert.AlertType.INFORMATION);
@@ -163,6 +183,9 @@ public class ManageBooksController {
             message += "The year is not valid.\n";
         if (book.getCategory() == null || book.getCategory().equals(""))
             message += "The category is not valid.\n";
+
+        if (book.getStatus() == null)
+            message += "The status is not valid.\n";
 
         if (message.equals("")) {
             return true;
@@ -220,6 +243,8 @@ public class ManageBooksController {
         try {
             library = Library.getInstance();
             initView();
+            Combostatus.getItems().setAll(BookStatus.values());
+            Combostatus.setValue(BookStatus.AVAILABLE); // por defecto
             setupLiveSearch();
 
             System.out.println("ManageBooksController inicializado correctamente");
@@ -287,6 +312,11 @@ public class ManageBooksController {
         tcAuthor.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getAuthor()));
         tcYear.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getYear())));
         tcCategory.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCategory()));
+        tcRating.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getAverageRating())));
+        tcStatus.setCellValueFactory(cellData ->
+                new SimpleStringProperty(cellData.getValue().getStatus().toString())
+        );
+
 
     }
 

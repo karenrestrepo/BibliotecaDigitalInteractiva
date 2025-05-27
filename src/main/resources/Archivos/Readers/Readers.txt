@@ -8,3 +8,4 @@ Antonio,antonio@gmail.com,8989
 Vanessa,vane@gmail.com,1234
 Carlos Mendoza,carlos@gmail.com,carlos123
 Sofia Ramirez,sofia@gmail.com,sofia456
+Usuario Test,test@email.com,password
