@@ -1,5 +1,7 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.LinkedHashSet;
@@ -171,6 +173,57 @@ public class ManageBooksController {
         }
     }
 
+    private java.util.Set<String> obtenerIdsPrestados() {
+        java.util.Set<String> librosPrestados = new java.util.HashSet<>();
+        String ruta = "src/main/resources/Archivos/Loans/Loans.txt";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(ruta))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+                String[] partes = linea.split(",");
+                if (partes.length >= 2) {
+                    librosPrestados.add(partes[1].trim()); // ID libro
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo Loans.txt: " + e.getMessage());
+        }
+
+        return librosPrestados;
+    }
+
+    private java.util.Map<String, Double> obtenerPromediosValoraciones() {
+        java.util.Map<String, java.util.List<Integer>> acumulados = new java.util.HashMap<>();
+        String ruta = "src/main/resources/Archivos/Ratings/Ratings.txt";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(ruta))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+                String[] partes = linea.split(",");
+                if (partes.length >= 3) {
+                    String idLibro = partes[1].trim();
+                    int rating = Integer.parseInt(partes[2].trim());
+
+                    acumulados.computeIfAbsent(idLibro, k -> new java.util.ArrayList<>()).add(rating);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo Ratings.txt: " + e.getMessage());
+        }
+
+        java.util.Map<String, Double> promedios = new java.util.HashMap<>();
+        for (String id : acumulados.keySet()) {
+            List<Integer> valores = acumulados.get(id);
+            double promedio = valores.stream().mapToInt(i -> i).average().orElse(0.0);
+            promedios.put(id, promedio);
+        }
+
+        return promedios;
+    }
+
+
 
     private boolean validateData(Book book) {
 
@@ -229,13 +282,32 @@ public class ManageBooksController {
         try {
             tableBook.getItems().clear();
             List<Book> books = library.getTitleTree().obtenerListainOrder();
+
+            java.util.Set<String> idsPrestados = obtenerIdsPrestados();
+            java.util.Map<String, Double> promediosValoraciones = obtenerPromediosValoraciones();
+
+            for (Book book : books) {
+                // Si el ID del libro está en préstamos, marcarlo como NO_DISPONIBLE
+                if (idsPrestados.contains(book.getIdBook())) {
+                    book.setStatus(BookStatus.CHECKED_OUT);
+                }
+
+                // Si el ID tiene valoraciones, asignar promedio
+                if (promediosValoraciones.containsKey(book.getIdBook())) {
+                    book.setAverageRating(promediosValoraciones.get(book.getIdBook()));
+                }
+            }
+
             tableBook.getItems().addAll(books);
+            tableBook.refresh();
             System.out.println("📚 Tabla de libros actualizada: " + books.size() + " libros");
+
         } catch (Exception e) {
             System.err.println("❌ Error actualizando tabla de libros: " + e.getMessage());
             showMessage("Error", "Error actualizando tabla", e.getMessage(), Alert.AlertType.ERROR);
         }
     }
+
 
     // También agregar este método al ManageBooksController initialize()
     @FXML

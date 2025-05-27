@@ -1,5 +1,7 @@
 package co.edu.uniquindio.bibliotecadigital.bibliotecadigitalfx.Controller;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -254,9 +256,18 @@ public class UserManagementController {
             LinkedList<Reader> readers = library.getReaders();
             ObservableList<Reader> readersList = FXCollections.observableArrayList();
 
+            // Obtener mapa de préstamos
+            java.util.Map<String, Integer> prestamosMap = obtenerPrestamosDesdeArchivo();
+
             for (int i = 0; i < readers.getSize(); i++) {
                 Reader reader = readers.getAmountNodo(i);
                 if (reader != null) {
+                    // Setear cantidad de préstamos directamente si tienes método para ello
+                    int prestamos = prestamosMap.getOrDefault(reader.getUsername(), 0);
+                    reader.getLoanHistoryList().clear(); // Limpiar para evitar duplicados si lo recargas
+                    for (int j = 0; j < prestamos; j++) {
+                        reader.getLoanHistoryList().add(null); // Solo para reflejar el tamaño (puedes mejorar esto)
+                    }
                     readersList.add(reader);
                 }
             }
@@ -268,6 +279,30 @@ public class UserManagementController {
             e.printStackTrace();
         }
     }
+
+    private java.util.Map<String, Integer> obtenerPrestamosDesdeArchivo() {
+        String rutaArchivo = "src/main/resources/Archivos/Loans/Loans.txt";
+        java.util.Map<String, Integer> prestamosPorUsuario = new java.util.HashMap<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(rutaArchivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+
+                String[] partes = linea.split(",");
+                if (partes.length >= 1) {
+                    String correo = partes[0].trim();
+                    prestamosPorUsuario.put(correo, prestamosPorUsuario.getOrDefault(correo, 0) + 1);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo préstamos: " + e.getMessage());
+        }
+
+        return prestamosPorUsuario;
+    }
+
+
     private void listenerSelection() {
         tableReader.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             readerSelect = newSelection;
