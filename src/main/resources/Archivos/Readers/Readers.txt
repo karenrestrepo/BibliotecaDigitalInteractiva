@@ -1,0 +1,16 @@
+# Archivo de lectores - Nombre,Usuario,Contraseña
+Daira,daira@gmail.com,1234
+Esteban,esteban@gmail.com,123
+Juliana,july@.com,2020
+Antonio,antonio@gmail.com,8989
+Vanessa,vane@gmail.com,123
+esteban@gmail.com,El Quijote,5
+ana@gmail.com,Cien Años de Soledad,4
+july@.com,Harry Potter y la Piedra Filosofal,5
+antonio@gmail.com,Crimen y Castigo,3
+vane@gmail.com,1984,4
+esteban@gmail.com,Orgullo y Prejuicio,3
+ana@gmail.com,La Odisea,2
+july@.com,Rayuela,4
+antonio@gmail.com,Don Juan Tenorio,5
+vane@gmail.com,El Señor de los Anillos,5

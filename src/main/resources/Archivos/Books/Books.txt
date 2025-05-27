@@ -1,2 +1,11 @@
+# Archivo de libros - ID,Título,Autor,Año,Categoría
 001,El Quijote,Miguel de Cervantes,1605,Clásico
 002,Cien Años de Soledad,Gabriel García Márquez,1967,Realismo Mágico
+003,Orgullo y Prejuicio,Jane Austen,1813,Romance
+004,1984,George Orwell,1949,Distopía
+005,Harry Potter y la Piedra Filosofal,J.K. Rowling,1997,Fantasía
+006,El Señor de los Anillos,J.R.R. Tolkien,1954,Fantasía
+007,Crimen y Castigo,Fiódor Dostoyevski,1866,Clásico
+008,La Odisea,Homero,-800,Épica
+009,Don Juan Tenorio,José Zorrilla,1844,Teatro
+010,Rayuela,Julio Cortázar,1963,Surrealismo

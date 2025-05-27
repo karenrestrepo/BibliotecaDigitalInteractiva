@@ -94,194 +94,6 @@ public class Library {
         System.out.println("✅ Datos por defecto creados exitosamente");
     }
 
-    // CORREGIDO: Método para crear libro con mejor manejo de errores
-    public Book createBook(String id, String title, String author, int year, String category)
-            throws IllegalArgumentException {
-        // Validación de parámetros
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("Book ID cannot be null or empty");
-        }
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Book title cannot be null or empty");
-        }
-        if (author == null || author.trim().isEmpty()) {
-            throw new IllegalArgumentException("Book author cannot be null or empty");
-        }
-        if (year < 0) {
-            throw new IllegalArgumentException("Book year cannot be negative");
-        }
-
-        // Verificar que no existe
-        if (books.containsKey(id)) {
-            throw new IllegalArgumentException("Book with ID '" + id + "' already exists");
-        }
-
-        Book newBook = new Book(id.trim(), title.trim(), author.trim(), year,
-                category != null ? category.trim() : "");
-
-
-        books.put(id, newBook);
-        titleTree.insert(newBook);    // árbol que ordena por título
-        authorTree.insert(newBook);   // árbol que ordena por autor
-        categoryTree.insert(newBook); // árbol que ordena por categoría
-
-
-        // Persistir cambios de forma segura
-        try {
-            if (persistence != null && !persistence.saveBook(newBook)) {
-                books.remove(id); // Rollback si falla la persistencia
-                titleTree.delete(newBook);
-                authorTree.delete(newBook);
-                categoryTree.delete(newBook);
-                throw new RuntimeException("Failed to save book to persistence");
-            }
-        } catch (Exception e) {
-            books.remove(id); // Rollback
-            titleTree.delete(newBook);
-            authorTree.delete(newBook);
-            categoryTree.delete(newBook);
-            System.err.println("Warning: Could not persist book, but keeping in memory: " + e.getMessage());
-        }
-
-        return newBook;
-    }
-
-    // CORREGIDO: Método para eliminar libro
-    public boolean removeBook(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            return false;
-        }
-
-        Book book = books.get(id);
-        if (book == null) {
-            return false;
-        }
-
-        books.remove(id);
-        titleTree.delete(book);
-        authorTree.delete(book);
-        categoryTree.delete(book);
-
-        // Guardar cambios en persistencia de forma segura
-        try {
-            if (persistence != null && !persistence.saveAllBooks(books)) {
-                books.put(id, book); // Rollback si falla
-                titleTree.insert(book);
-                authorTree.insert(book);
-                categoryTree.insert(book);
-
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not persist book deletion: " + e.getMessage());
-        }
-
-        return true;
-    }
-
-    // CORREGIDO: Método para registrar lector
-    public boolean registerReader(String name, String username, String password) {
-        // Validación de parámetros
-        if (name == null || name.trim().isEmpty() ||
-                username == null || username.trim().isEmpty() ||
-                password == null || password.trim().isEmpty()) {
-            return false;
-        }
-
-        String cleanUsername = username.trim();
-
-        if (readers.containsKey(cleanUsername)) {
-            return false; // Ya existe
-        }
-
-        Reader reader = new Reader(name.trim(), cleanUsername, password.trim());
-        reader.setLibrary(this); // Ahora es seguro
-
-        // Guardar en memoria
-        readers.put(cleanUsername, reader);
-
-        // Persistir de forma segura
-        try {
-            if (persistence != null && !persistence.saveReader(reader)) {
-                readers.remove(cleanUsername); // Rollback
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not persist reader: " + e.getMessage());
-        }
-
-        return true;
-    }
-
-    // CORREGIDO: Método para eliminar lector
-    public boolean deleteReader(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            return false;
-        }
-
-        String cleanUsername = username.trim();
-
-        if (!readers.containsKey(cleanUsername)) {
-            return false;
-        }
-
-        Reader reader = readers.get(cleanUsername);
-        readers.remove(cleanUsername);
-
-        // Persistir cambios de forma segura
-        try {
-            if (persistence != null && !persistence.deleteReader(cleanUsername)) {
-                readers.put(cleanUsername, reader); // Rollback
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not persist reader deletion: " + e.getMessage());
-        }
-
-        return true;
-    }
-
-    // CORREGIDO: Método para actualizar lector
-    public boolean updateReader(String username, String newName, String newPassword) {
-        if (username == null || username.trim().isEmpty() ||
-                newName == null || newName.trim().isEmpty() ||
-                newPassword == null || newPassword.trim().isEmpty()) {
-            return false;
-        }
-
-        String cleanUsername = username.trim();
-
-        if (!readers.containsKey(cleanUsername)) {
-            return false;
-        }
-
-        Reader reader = readers.get(cleanUsername);
-        String oldName = reader.getName();
-        String oldPassword = reader.getPassword();
-
-        // Actualizar en memoria
-        reader.setName(newName.trim());
-        reader.setPassword(newPassword.trim());
-
-        // Persistir cambios de forma segura
-        try {
-            if (persistence != null && !persistence.updateReader(cleanUsername, newName.trim(), newPassword.trim())) {
-                // Rollback
-                reader.setName(oldName);
-                reader.setPassword(oldPassword);
-                return false;
-            }
-        } catch (Exception e) {
-            // Rollback
-            reader.setName(oldName);
-            reader.setPassword(oldPassword);
-            System.err.println("Warning: Could not persist reader update: " + e.getMessage());
-            return false;
-        }
-
-        return true;
-    }
-
     // CORREGIDO: Método para obtener libro por ID
     public Book getBookById(String id) {
         if (id == null || id.trim().isEmpty()) {
@@ -420,6 +232,233 @@ public class Library {
         } catch (Exception e) {
             System.err.println("Warning: Could not persist connection: " + e.getMessage());
             return true; // Mantener en memoria aunque no se persista
+        }
+    }
+
+    /**
+     * CORRECCIÓN: Crear libro con persistencia inmediata
+     */
+    public Book createBook(String id, String title, String author, int year, String category)
+            throws IllegalArgumentException {
+
+        // Validaciones (mantén las que ya tienes)
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book ID cannot be null or empty");
+        }
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book title cannot be null or empty");
+        }
+        if (author == null || author.trim().isEmpty()) {
+            throw new IllegalArgumentException("Book author cannot be null or empty");
+        }
+        if (year < 0) {
+            throw new IllegalArgumentException("Book year cannot be negative");
+        }
+
+        String cleanId = id.trim();
+
+        // Verificar que no existe
+        if (books.containsKey(cleanId)) {
+            throw new IllegalArgumentException("Book with ID '" + cleanId + "' already exists");
+        }
+
+        // Crear libro
+        Book newBook = new Book(cleanId, title.trim(), author.trim(), year,
+                category != null ? category.trim() : "");
+
+        // Guardar en memoria
+        books.put(cleanId, newBook);
+        titleTree.insert(newBook);
+        authorTree.insert(newBook);
+        categoryTree.insert(newBook);
+
+        // CORRECCIÓN: Persistir inmediatamente
+        try {
+            if (!persistence.saveBook(newBook)) {
+                // Rollback si falla la persistencia
+                books.remove(cleanId);
+                titleTree.delete(newBook);
+                authorTree.delete(newBook);
+                categoryTree.delete(newBook);
+                throw new RuntimeException("Failed to save book to persistence");
+            }
+            System.out.println("✅ Libro creado y persistido: " + title);
+        } catch (Exception e) {
+            // Rollback
+            books.remove(cleanId);
+            titleTree.delete(newBook);
+            authorTree.delete(newBook);
+            categoryTree.delete(newBook);
+            System.err.println("❌ Error persistiendo libro: " + e.getMessage());
+            throw new RuntimeException("Failed to persist book", e);
+        }
+
+        return newBook;
+    }
+
+    /**
+     * CORRECCIÓN: Registrar lector con persistencia inmediata
+     */
+    public boolean registerReader(String name, String username, String password) {
+        // Validaciones (mantén las que ya tienes)
+        if (name == null || name.trim().isEmpty() ||
+                username == null || username.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+            System.err.println("❌ Campos vacíos en registro de lector");
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (readers.containsKey(cleanUsername)) {
+            System.err.println("❌ Username ya existe: " + cleanUsername);
+            return false;
+        }
+
+        // Crear lector
+        Reader reader = new Reader(name.trim(), cleanUsername, password.trim());
+        reader.setLibrary(this);
+
+        // Guardar en memoria
+        readers.put(cleanUsername, reader);
+
+        // CORRECCIÓN: Persistir inmediatamente
+        try {
+            if (!persistence.saveReader(reader)) {
+                readers.remove(cleanUsername);
+                System.err.println("❌ Error persistiendo lector");
+                return false;
+            }
+            System.out.println("✅ Lector registrado y persistido: " + name.trim());
+            return true;
+        } catch (Exception e) {
+            readers.remove(cleanUsername);
+            System.err.println("❌ Error en persistencia de lector: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * CORRECCIÓN: Eliminar libro con persistencia
+     */
+    public boolean removeBook(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanId = id.trim();
+        Book book = books.get(cleanId);
+        if (book == null) {
+            System.err.println("❌ Libro no encontrado para eliminar: " + cleanId);
+            return false;
+        }
+
+        // Remover de memoria
+        books.remove(cleanId);
+        titleTree.delete(book);
+        authorTree.delete(book);
+        categoryTree.delete(book);
+
+        // CORRECCIÓN: Persistir cambios reescribiendo todo el archivo
+        try {
+            if (!persistence.saveAllBooks(books)) {
+                // Rollback si falla
+                books.put(cleanId, book);
+                titleTree.insert(book);
+                authorTree.insert(book);
+                categoryTree.insert(book);
+                System.err.println("❌ Error persistiendo eliminación de libro");
+                return false;
+            }
+            System.out.println("✅ Libro eliminado y cambios persistidos: " + book.getTitle());
+            return true;
+        } catch (Exception e) {
+            // Rollback
+            books.put(cleanId, book);
+            titleTree.insert(book);
+            authorTree.insert(book);
+            categoryTree.insert(book);
+            System.err.println("❌ Error en persistencia de eliminación: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * CORRECCIÓN: Eliminar lector con persistencia
+     */
+    public boolean deleteReader(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (!readers.containsKey(cleanUsername)) {
+            System.err.println("❌ Lector no encontrado para eliminar: " + cleanUsername);
+            return false;
+        }
+
+        Reader reader = readers.get(cleanUsername);
+        readers.remove(cleanUsername);
+
+        // CORRECCIÓN: Usar método de persistencia mejorado
+        try {
+            if (!persistence.deleteReader(cleanUsername)) {
+                readers.put(cleanUsername, reader); // Rollback
+                System.err.println("❌ Error persistiendo eliminación de lector");
+                return false;
+            }
+            System.out.println("✅ Lector eliminado y cambios persistidos: " + reader.getName());
+            return true;
+        } catch (Exception e) {
+            readers.put(cleanUsername, reader); // Rollback
+            System.err.println("❌ Error en persistencia de eliminación: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * CORRECCIÓN: Actualizar lector con persistencia
+     */
+    public boolean updateReader(String username, String newName, String newPassword) {
+        if (username == null || username.trim().isEmpty() ||
+                newName == null || newName.trim().isEmpty() ||
+                newPassword == null || newPassword.trim().isEmpty()) {
+            return false;
+        }
+
+        String cleanUsername = username.trim();
+
+        if (!readers.containsKey(cleanUsername)) {
+            System.err.println("❌ Lector no encontrado para actualizar: " + cleanUsername);
+            return false;
+        }
+
+        Reader reader = readers.get(cleanUsername);
+        String oldName = reader.getName();
+        String oldPassword = reader.getPassword();
+
+        // Actualizar en memoria
+        reader.setName(newName.trim());
+        reader.setPassword(newPassword.trim());
+
+        // CORRECCIÓN: Usar método de persistencia mejorado
+        try {
+            if (!persistence.updateReader(cleanUsername, newName.trim(), newPassword.trim())) {
+                // Rollback
+                reader.setName(oldName);
+                reader.setPassword(oldPassword);
+                System.err.println("❌ Error persistiendo actualización de lector");
+                return false;
+            }
+            System.out.println("✅ Lector actualizado y cambios persistidos: " + newName.trim());
+            return true;
+        } catch (Exception e) {
+            // Rollback
+            reader.setName(oldName);
+            reader.setPassword(oldPassword);
+            System.err.println("❌ Error en persistencia de actualización: " + e.getMessage());
+            return false;
         }
     }
 
