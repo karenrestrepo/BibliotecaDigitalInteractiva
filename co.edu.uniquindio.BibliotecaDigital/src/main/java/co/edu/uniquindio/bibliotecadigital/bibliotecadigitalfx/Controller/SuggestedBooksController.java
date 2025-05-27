@@ -17,6 +17,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -203,6 +205,52 @@ public class SuggestedBooksController {
         else return "#9E9E9E";                   // Gris - Match bajo
     }
 
+    private LinkedList<Book> generarRecomendacionesPorPreferencias() {
+        LinkedList<Book> sugerencias = new LinkedList<>();
+        java.util.Set<String> autoresPreferidos = new java.util.HashSet<>();
+        java.util.Set<String> categoriasPreferidas = new java.util.HashSet<>();
+        java.util.Set<String> librosYaLeidos = new java.util.HashSet<>();
+
+        // Obtener valoraciones del archivo
+        String ruta = "src/main/resources/Archivos/Ratings/Ratings.txt";
+        try (BufferedReader br = new BufferedReader(new FileReader(ruta))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.startsWith("#") || linea.trim().isEmpty()) continue;
+                String[] partes = linea.split(",");
+                if (partes.length >= 4) {
+                    String usuario = partes[0].trim();
+                    String idLibro = partes[1].trim();
+                    int estrellas = Integer.parseInt(partes[2].trim());
+
+                    if (usuario.equalsIgnoreCase(currentReader.getUsername()) && estrellas >= 4) {
+                        Book libro = library.getBookById(idLibro);
+                        if (libro != null) {
+                            autoresPreferidos.add(libro.getAuthor());
+                            categoriasPreferidas.add(libro.getCategory());
+                            librosYaLeidos.add(idLibro);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error leyendo valoraciones: " + e.getMessage());
+        }
+
+        // Buscar libros que coincidan por autor o categoría, y no haya leído
+        for (Book libro : library.getBookssList()) {
+            if (librosYaLeidos.contains(libro.getIdBook())) continue;
+
+            if (autoresPreferidos.contains(libro.getAuthor()) ||
+                    categoriasPreferidas.contains(libro.getCategory())) {
+                sugerencias.add(libro);
+            }
+        }
+
+        return sugerencias;
+    }
+
+
     /**
      * Crea información adicional del libro (categoría, valoración promedio)
      */
@@ -264,46 +312,41 @@ public class SuggestedBooksController {
      * Este método demuestra cómo integrar el sistema de ML con la UI
      */
     private void loadBookRecommendations() {
-        if (currentReader == null || recommendationSystem == null) {
+        if (currentReader == null || library == null) {
             showNoRecommendationsMessage();
             return;
         }
 
         try {
-            // Obtener recomendaciones híbridas
-            LinkedList<BookRecommendationSystem.BookRecommendation> recommendations =
-                    recommendationSystem.getHybridRecommendations(currentReader, MAX_RECOMMENDATIONS);
+            LinkedList<Book> sugerencias = generarRecomendacionesPorPreferencias();
 
-            // Filtrar por puntuación mínima
-            LinkedList<BookRecommendationSystem.BookRecommendation> filteredRecommendations =
-                    filterByMinimumScore(recommendations, MIN_SCORE_THRESHOLD);
-
-            // Convertir a ObservableList para JavaFX
             ObservableList<BookRecommendationSystem.BookRecommendation> observableRecommendations =
                     FXCollections.observableArrayList();
 
-            for (BookRecommendationSystem.BookRecommendation rec : filteredRecommendations) {
+            for (Book libro : sugerencias) {
+                String razon = "Basado en tus calificaciones de libros similares.";
+                double puntuacion = 0.7; // fija o puedes mejorarla más adelante
+
+                BookRecommendationSystem.BookRecommendation rec =
+                        new BookRecommendationSystem.BookRecommendation(libro, puntuacion, razon);
+
                 observableRecommendations.add(rec);
             }
 
-            // Actualizar interfaz
             lvSuggestedBooks.setItems(observableRecommendations);
 
-            // Mostrar mensaje apropiado según el resultado
-            if (filteredRecommendations.getSize() == 0) {
+            if (sugerencias.getSize() == 0) {
                 showNoRecommendationsMessage();
             } else {
-                System.out.println("Cargadas " + filteredRecommendations.getSize() + " recomendaciones para " + currentReader.getName());
+                System.out.println("✅ Recomendaciones personalizadas generadas por categoría/autor");
             }
 
-            debugRecommendationFiltering();
-
         } catch (Exception e) {
-            showAlert("Error", "Error al cargar recomendaciones: " + e.getMessage());
+            showAlert("Error", "No se pudo generar recomendaciones: " + e.getMessage());
             e.printStackTrace();
         }
-
     }
+
 
     /**
      * Filtra recomendaciones por puntuación mínima
